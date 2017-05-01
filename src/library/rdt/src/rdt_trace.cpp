@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cinttypes>
 #include <assert.h>
+#include <unordered_set>
 
 #include "rdt.h"
 
@@ -27,6 +28,9 @@ static inline void compute_delta() {
 }
 
 struct trace_default {
+
+    std::unordered_set<std::string> m_filter_set;
+
     static void begin(const SEXP prom) {
         fprintf(output, "DELTA,TYPE,LOCATION,NAME\n");
         fflush(output);

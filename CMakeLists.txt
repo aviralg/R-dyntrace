@@ -733,7 +733,9 @@ set(SOURCE_FILES
         src/library/rdt/src/r.h
         src/library/rdt/src/dyn_fn_lookup.h
         src/library/rdt/src/dyn_fn_lookup.cpp
-        src/library/rdt/src/rdt_specialsxp.cpp)
+        src/library/rdt/src/rdt_specialsxp.cpp
+        src/library/rdt/src/filter.h
+        src/library/rdt/src/filter.cpp)
 
 include_directories(include)
 include_directories(include/R_ext)

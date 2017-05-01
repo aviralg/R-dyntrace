@@ -7,6 +7,7 @@
 
 #include "rdt.h"
 #include "dyn_fn_lookup.h"
+#include "filter.h"
 
 static rdt_handler *handler = NULL;
 
@@ -24,12 +25,6 @@ SEXP Rdt(SEXP filter, SEXP tracer, SEXP rho, SEXP options) {
 
         rdt_stop();
         return R_TrueValue;
-    }
-
-    const char *filter_str = get_string(filter);
-    if (strlen(filter_str))
-    {
-        Rprintf("Filtering results according to filter at %s...\n", filter_str);
     }
 
     if (!isEnvironment(rho)) {
@@ -51,6 +46,19 @@ SEXP Rdt(SEXP filter, SEXP tracer, SEXP rho, SEXP options) {
         return R_FalseValue;
     }
 
+    handler->m_filter = NULL;
+    const char *filter_file = get_string(filter);
+    if (strlen(filter_file))
+    {
+        Rprintf("Filtering results according to filter at %s...\n", filter_file);
+        if (!(handler->m_filter = get_filter(filter_file)))
+        {
+            error("File '%s' does not exist", filter_file);
+            return R_FalseValue;
+        }
+        print(handler->m_filter);
+    }
+
     SEXP block = findVar(install("block"), rho);
     if (block == NULL || block == R_NilValue) {
         error("Unable to find 'block' variable");
@@ -70,5 +78,11 @@ SEXP Rdt(SEXP filter, SEXP tracer, SEXP rho, SEXP options) {
     // Missing cleanup_tracing function is not an error
 
     rdt_stop();
+
+    if (handler->m_filter) {
+        Rprintf("Destroying filter...");
+        destroy_filter(handler->m_filter);
+    }
+
     return R_TrueValue; // TODO Why does this return TRUE and not the return value of the expression anyway?
 }
