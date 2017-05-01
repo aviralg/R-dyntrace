@@ -155,3 +155,8 @@ stamp-docs
 /src/**/all.R
 .Rproj.user
 src/library/rdt/..Rcheck
+
+doc/*
+*.pdf
+*.txt
+*.eps

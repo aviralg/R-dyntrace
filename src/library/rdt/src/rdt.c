@@ -18,12 +18,18 @@ static void internal_eval(void *data) {
     eval(block, rho);
 }
 
-SEXP Rdt(SEXP tracer, SEXP rho, SEXP options) {
+SEXP Rdt(SEXP filter, SEXP tracer, SEXP rho, SEXP options) {
     if (rdt_is_running()) {
         if (handler) free(handler);
 
         rdt_stop();
         return R_TrueValue;
+    }
+
+    const char *filter_str = get_string(filter);
+    if (strlen(filter_str))
+    {
+        Rprintf("Filtering results according to filter at %s...\n", filter_str);
     }
 
     if (!isEnvironment(rho)) {

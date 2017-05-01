@@ -15,13 +15,13 @@ findPlugins <- function() {
 	}
 }
 
-Rdt <- function(block, tracer="default", ...) {
+Rdt <- function(block, tracer="default", filter="", ...) {
     stopifnot(is.character(tracer) && length(tracer) == 1 && nchar(tracer) > 0)
     if (missing(block)) stop("block is required")
 
     start.time <- Sys.time()
 
-    retval <- .Call(C_Rdt, tracer, environment(), list(...))
+    retval <- .Call(C_Rdt, filter, tracer, environment(), list(...))
 
     end.time <- Sys.time()
     write(paste("Elapsed time:", (end.time - start.time)), stderr())
