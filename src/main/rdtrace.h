@@ -40,7 +40,6 @@ extern "C" {
 // probes
 // ----------------------------------------------------------------------------
 typedef struct rdt_handler {
-    void *m_filter;
     // Fires when the tracer starts.
     // Not an interpreter hook. It is called from
     // src/main/rdtrace.c:rdt_start() which is called from src/library/rdt/src/rdt.c:Rdt() (the entrypoint)

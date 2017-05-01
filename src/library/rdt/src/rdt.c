@@ -10,6 +10,7 @@
 #include "filter.h"
 
 static rdt_handler *handler = NULL;
+void *p_filter = NULL;
 
 static void internal_eval(void *data) {
     void **args = data;
@@ -32,6 +33,15 @@ SEXP Rdt(SEXP filter, SEXP tracer, SEXP rho, SEXP options) {
         return R_FalseValue;
     }
 
+    p_filter = NULL;
+    const char *filter_file = get_string(filter);
+    if (strlen(filter_file))
+    {
+        Rprintf("Obtaining filter from '%s' file...\n", filter_file);
+        p_filter = get_filter(filter_file);
+        //print_filter(p_filter);
+    }
+
     const char *sys = get_string(tracer);
     tracer_setup_ptr_t setup_tracing = find_fn_by_name("setup_%s_tracing", sys);
 
@@ -44,19 +54,6 @@ SEXP Rdt(SEXP filter, SEXP tracer, SEXP rho, SEXP options) {
     if (!handler) {
         error("Unable to initialize dynamic tracing");
         return R_FalseValue;
-    }
-
-    handler->m_filter = NULL;
-    const char *filter_file = get_string(filter);
-    if (strlen(filter_file))
-    {
-        Rprintf("Filtering results according to filter at %s...\n", filter_file);
-        if (!(handler->m_filter = get_filter(filter_file)))
-        {
-            error("File '%s' does not exist", filter_file);
-            return R_FalseValue;
-        }
-        print(handler->m_filter);
     }
 
     SEXP block = findVar(install("block"), rho);
@@ -77,12 +74,12 @@ SEXP Rdt(SEXP filter, SEXP tracer, SEXP rho, SEXP options) {
     }
     // Missing cleanup_tracing function is not an error
 
-    rdt_stop();
-
-    if (handler->m_filter) {
-        Rprintf("Destroying filter...");
-        destroy_filter(handler->m_filter);
+    if (p_filter)
+    {
+        Rprintf("Destroying filter...\n");
+        destroy_filter(p_filter);
     }
 
+    rdt_stop();
     return R_TrueValue; // TODO Why does this return TRUE and not the return value of the expression anyway?
 }

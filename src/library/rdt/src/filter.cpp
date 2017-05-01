@@ -68,7 +68,7 @@ extern "C"
         return reinterpret_cast<filter_t *>(filter)->ContainsItem(item);
     }
 
-    void print(void *filter) {
+    void print_filter(void *filter) {
         return reinterpret_cast<filter_t *>(filter)->Print();
     }
 

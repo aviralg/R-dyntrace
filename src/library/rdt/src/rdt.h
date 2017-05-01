@@ -1,6 +1,8 @@
 #ifndef	_RDT_H
 #define	_RDT_H
 
+extern void *p_filter;
+
 #ifdef __cplusplus
 #include "r.h"
 #endif

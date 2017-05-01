@@ -25,7 +25,7 @@ void *get_filter(const char *filename);
 void destroy_filter(void *filter);
 void add_item(void *filter, const char *item);
 int contains_item(void *filter, const char *item);
-void print(void *filter);
+void print_filter(void *filter);
 
 #ifdef __cplusplus
 }

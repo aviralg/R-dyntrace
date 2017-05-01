@@ -5,10 +5,11 @@
 #include <cstdint>
 #include <cinttypes>
 #include <assert.h>
-#include <unordered_set>
 
 #include "rdt.h"
+#include "filter.h"
 
+#include <iostream>
 
 static FILE *output = NULL;
 static uint64_t last = 0;
@@ -27,9 +28,9 @@ static inline void compute_delta() {
     delta = (timestamp() - last) / 1000;
 }
 
-struct trace_default {
 
-    std::unordered_set<std::string> m_filter_set;
+
+struct trace_default {
 
     static void begin(const SEXP prom) {
         fprintf(output, "DELTA,TYPE,LOCATION,NAME\n");
@@ -87,6 +88,14 @@ struct trace_default {
     }
 
     static void builtin_entry(const SEXP call, const SEXP op, const SEXP rho) {
+        if (p_filter)
+        {
+            print_filter(p_filter);
+        }
+        else
+        {
+            std::cout << "NE\n";
+        }
         compute_delta();
 
         const char *name = get_name(call);
