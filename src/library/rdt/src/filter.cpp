@@ -57,15 +57,24 @@ extern "C"
     }
 
     void destroy_filter(void *filter) {
-        delete reinterpret_cast<filter_t *>(filter);
+        if (filter) {
+            delete reinterpret_cast<filter_t *>(filter);
+        }
     }
 
     void add_item(void *filter, const char *item) {
-        reinterpret_cast<filter_t *>(filter)->AddItem(item);
+        if (filter) {
+            reinterpret_cast<filter_t *>(filter)->AddItem(item);
+        }
     }
 
     int contains_item(void *filter, const char *item) {
-        return reinterpret_cast<filter_t *>(filter)->ContainsItem(item);
+        if (filter && item && strlen(item)) {
+            return reinterpret_cast<filter_t *>(filter)->ContainsItem(item);
+        }
+        else {
+            return 0;
+        }
     }
 
     void print_filter(void *filter) {

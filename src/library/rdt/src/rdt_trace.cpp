@@ -48,6 +48,12 @@ struct trace_default {
         char *loc = get_location(op);
         char *fqfn = NULL;
 
+
+        if (contains_item(p_filter, name))
+        {
+            return;
+        }
+
         if (ns) {
             int outcome = asprintf(&fqfn, "%s::%s", ns, CHKSTR(name));
             assert(outcome > 0);
@@ -72,6 +78,12 @@ struct trace_default {
         char *loc = get_location(op);
         char *fqfn = NULL;
 
+
+        if (contains_item(p_filter, name))
+        {
+            return;
+        }
+
         if (ns) {
             int outcome = asprintf(&fqfn, "%s::%s", ns, CHKSTR(name));
             assert(outcome > 0);
@@ -88,17 +100,15 @@ struct trace_default {
     }
 
     static void builtin_entry(const SEXP call, const SEXP op, const SEXP rho) {
-        if (p_filter)
-        {
-            print_filter(p_filter);
-        }
-        else
-        {
-            std::cout << "NE\n";
-        }
         compute_delta();
 
         const char *name = get_name(call);
+
+
+        if (contains_item(p_filter, name))
+        {
+            return;
+        }
 
         print("builtin-entry", NULL, name);
 
@@ -110,6 +120,12 @@ struct trace_default {
 
         const char *name = get_name(call);
 
+
+        if (contains_item(p_filter, name))
+        {
+            return;
+        }
+
         print("builtin-exit", NULL, name);
 
         last = timestamp();
@@ -120,6 +136,11 @@ struct trace_default {
 
         const char *name = get_name(symbol);
 
+        if (contains_item(p_filter, name))
+        {
+            return;
+        }
+
         print("promise-entry", NULL, name);
 
         last = timestamp();
@@ -129,6 +150,11 @@ struct trace_default {
         compute_delta();
 
         const char *name = get_name(symbol);
+
+        if (contains_item(p_filter, name))
+        {
+            return;
+        }
 
         print("promise-exit", NULL, name);
 

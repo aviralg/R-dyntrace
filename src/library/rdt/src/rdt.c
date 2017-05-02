@@ -39,7 +39,6 @@ SEXP Rdt(SEXP filter, SEXP tracer, SEXP rho, SEXP options) {
     {
         Rprintf("Obtaining filter from '%s' file...\n", filter_file);
         p_filter = get_filter(filter_file);
-        //print_filter(p_filter);
     }
 
     const char *sys = get_string(tracer);
