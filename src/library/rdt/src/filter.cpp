@@ -1,7 +1,8 @@
 #include "filter.h"
 
+/*
+#ifdef __cplusplus
 #include <fstream>
-
 #include <iostream>
 
 bool filter_t::Init(const char *filename)
@@ -45,7 +46,6 @@ void filter_t::Print() const
 
 extern "C"
 {
-
     void *get_filter(const char *filename) {
         filter_t *filter = new filter_t;
 
@@ -78,7 +78,87 @@ extern "C"
     }
 
     void print_filter(void *filter) {
-        return reinterpret_cast<filter_t *>(filter)->Print();
+        reinterpret_cast<filter_t *>(filter)->Print();
+    }
+}
+
+#else
+*/
+
+int Init(void *filter, const char *filename)
+{
+    FILE *fp;
+    size_t len = 0;
+    ssize_t read;
+    char * line = NULL;
+
+    fp = fopen(filename, "r");
+    if (fp == NULL)
+    {
+        return false;
     }
 
+    filter_t *f = (filter_t*)filter;
+    while ((read = getline(&line, &len, fp)) != -1)
+    {
+        hashset_add(f->m_filter_set, line);
+    }
+
+    fclose(fp);
 }
+
+void AddItem(void *filter, const char *item)
+{
+    filter_t *f = (filter_t*)filter;
+    hashset_add(f->m_filter_set, (void *)item);
+}
+
+int ContainsItem(void *filter, const char *item)
+{
+    filter_t *f = (filter_t*)filter;
+    return hashset_is_member(f->m_filter_set, (void*)item);
+}
+
+void Print(void *filter)
+{
+
+}
+
+void *get_filter(const char *filename) {
+    filter_t *filter = (filter_t*)malloc(sizeof(filter_t));
+    filter->m_filter_set = hashset_create();
+
+    if (Init(filter, filename)) {
+        (void*)(filter);
+    } else {
+        return NULL;
+    }
+}
+
+void destroy_filter(void *filter) {
+    if (filter) {
+        filter_t *f = (filter_t*)filter;
+        hashset_destroy(f->m_filter_set);
+        free(f);
+    }
+}
+
+void add_item(void *filter, const char *item) {
+    if (filter) {
+        AddItem(filter, item);
+    }
+}
+
+int contains_item(void *filter, const char *item) {
+    if (filter && item && strlen(item)) {
+        return ContainsItem(filter, item);
+    }
+    else {
+        return 0;
+    }
+}
+
+void print_filter(void *filter) {
+    Print(filter);
+}
+//#endif
