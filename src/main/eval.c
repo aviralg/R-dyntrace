@@ -723,6 +723,7 @@ SEXP eval(SEXP e, SEXP rho)
 	    RDT_HOOK(probe_specialsxp_exit, e, op, rho, tmp);
 	}
 	else if (TYPEOF(op) == BUILTINSXP) {
+		//Rprintf("(a)"); // XXX remove
 	    RDT_HOOK(probe_builtin_entry, e, op, rho);
 
 	    int save = R_PPStackTop, flag = PRIMPRINT(op);
@@ -1311,6 +1312,7 @@ SEXP R_forceAndCall(SEXP e, int n, SEXP rho)
 	int flag = PRIMPRINT(fun);
 	PROTECT(tmp = evalList(CDR(e), rho, e, 0));
 	if (flag < 2) R_Visible = flag != 1;
+		//Rprintf("(b)"); // XXX remove
 	RDT_HOOK(probe_builtin_entry, e, fun, rho);
 	/* We used to insert a context only if profiling,
 	   but helps for tracebacks on .C etc. */
@@ -3697,6 +3699,11 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y,
   SEXP call = VECTOR_ELT(constants, GETOP()); \
   SEXP x = GETSTACK(-2); \
   SEXP y = GETSTACK(-1); \
+if(RDT_IS_ENABLED(probe_builtin_entry)) {\
+		Rprintf("(c)"); \
+   R_inspect(opsym);\
+   R_inspect(call);\
+}\
   RDT_HOOK(probe_builtin_entry, opsym, call, rho); \
   SEXP tmp = do_fun(call, opval, opsym, x, y,rho); \
   SETSTACK(-2, tmp);	\
@@ -5729,6 +5736,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 	  checkForMissings(args, call);
 	  flag = PRIMPRINT(fun);
 	  R_Visible = flag != 1;
+		//Rprintf("(d)"); // XXX remove
 	  RDT_HOOK(probe_builtin_entry, call, fun, rho);
 	  value = PRIMFUN(fun) (call, fun, args, rho);
 	  RDT_HOOK(probe_builtin_exit, call, fun, rho, value);
@@ -5761,6 +5769,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 	  error(_("not a BUILTIN function"));
 	flag = PRIMPRINT(fun);
 	R_Visible = flag != 1;
+		//Rprintf("(e)"); // XXX remove
 	RDT_HOOK(probe_builtin_entry, call, fun, rho);
 	if (R_Profiling && IS_TRUE_BUILTIN(fun)) {
 	    RCNTXT cntxt;
@@ -6065,6 +6074,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 	  SETCAR(args, lhs);
 	  /* make the call */
 	  checkForMissings(args, call);
+		//Rprintf("(f)"); // XXX remove
 	  RDT_HOOK(probe_builtin_entry, call, fun, rho);
 	  value = PRIMFUN(fun) (call, fun, args, rho);
 	  RDT_HOOK(probe_builtin_exit, call, fun, rho, value);
@@ -6119,6 +6129,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 	  SETCAR(args, lhs);
 	  /* make the call */
 	  checkForMissings(args, call);
+		//Rprintf("(g)"); // XXX remove
 	  RDT_HOOK(probe_builtin_entry, call, fun, rho);
 	  value = PRIMFUN(fun) (call, fun, args, rho);
 	  RDT_HOOK(probe_builtin_exit, call, fun, rho, value);

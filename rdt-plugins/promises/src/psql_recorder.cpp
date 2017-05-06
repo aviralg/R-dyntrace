@@ -350,7 +350,6 @@ void psql_recorder_t::start_trace() {
                     tracer_conf.outputs);
 
             for (auto statement : prepared_sql_create_tables_and_views) {
-                Rprintf(sqlite3_sql(statement));
                 multiplexer::output(
                         multiplexer::payload_t(statement),
                         tracer_conf.outputs);

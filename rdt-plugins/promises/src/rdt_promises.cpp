@@ -95,7 +95,13 @@ struct trace_promises {
     }
 
     static void builtin_entry(const SEXP call, const SEXP op, const SEXP rho) {
-        function_type fn_type = (PRIMINTERNAL(op) == 0) ? function_type::TRUE_BUILTIN : function_type::BUILTIN;
+        Rprintf("%s,%i,%i\n",get_name(call),TYPEOF(op),TYPEOF(call));
+        function_type fn_type;
+        if(TYPEOF(op)==BUILTINSXP)
+            fn_type = (PRIMINTERNAL(op) == 0) ? function_type::TRUE_BUILTIN : function_type::BUILTIN;
+        else  /*the weird case of NewBuiltin2 , where op is a language expression*/
+            fn_type = function_type::TRUE_BUILTIN;
+        Rprintf("----\n");
         print_entry_info(call, op, rho, fn_type);
     }
 
@@ -112,7 +118,11 @@ struct trace_promises {
     }
 
     static void builtin_exit(const SEXP call, const SEXP op, const SEXP rho, const SEXP retval) {
-        function_type fn_type = (PRIMINTERNAL(op) == 0) ? function_type::TRUE_BUILTIN : function_type::BUILTIN;
+        function_type fn_type;
+        if(TYPEOF(op)==BUILTINSXP)
+            fn_type = (PRIMINTERNAL(op) == 0) ? function_type::TRUE_BUILTIN : function_type::BUILTIN;
+        else
+            fn_type = function_type::TRUE_BUILTIN;
         print_exit_info(call, op, rho, fn_type);
     }
 
