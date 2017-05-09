@@ -109,7 +109,40 @@ public:
     }
 };
 
-enum class function_type {CLOSURE = 0, BUILTIN = 1, SPECIAL = 2, TRUE_BUILTIN = 3};
+enum class function_type {
+    CLOSURE = 0,
+    BUILTIN = 1,
+    SPECIAL = 2,
+    TRUE_BUILTIN = 3};
+
+enum class sexp_type {
+    NIL = 0,
+    SYM = 1,
+    LIST = 2,
+    CLOS = 3,
+    ENV = 4,
+    PROM = 5,
+    LANG = 6,
+    SPECIAL = 7,
+    BUILTIN = 8,
+    CHAR = 9,
+    LGL = 10,
+    INT = 13,
+    REAL = 14,
+    CPLX = 15,
+    STR = 16,
+    DOT = 17,
+    ANY = 18,
+    VEC = 19,
+    EXPR = 20,
+    BCODE = 21,
+    EXTPTR = 22,
+    WEAKREF = 23,
+    RAW = 24,
+    S4 = 25
+};
+
+string sexp_type_to_string(sexp_type s);
 
 struct call_info_t {
     function_type fn_type;
@@ -138,6 +171,7 @@ struct prom_info_t {
     prom_id_t     prom_id;
     call_id_t     in_call_id;
     call_id_t     from_call_id;
+    sexp_type     prom_type;
 };
 
 prom_id_t get_promise_id(SEXP promise);

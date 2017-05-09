@@ -163,9 +163,11 @@ private:
             info.name = name;
 
         SEXP promise_expression = get_promise(symbol, rho);
+
         info.prom_id = get_promise_id(promise_expression);
         info.in_call_id = STATE(fun_stack).top();
         info.from_call_id = STATE(promise_origin)[info.prom_id];
+        info.prom_type = static_cast<sexp_type >(TYPEOF(PRCODE(promise_expression)));
 
         return info;
     }
