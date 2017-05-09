@@ -129,10 +129,14 @@ struct trace_promises {
     }
 
     static void promise_created(const SEXP prom) {
-        prom_id_t prom_id = make_promise_id(prom);
-        STATE(fresh_promises).insert(prom_id);
+        prom_basic_info_t info;
 
-        rec.promise_created_process(prom_id);
+        info.prom_id = make_promise_id(prom);
+        STATE(fresh_promises).insert(info.prom_id);
+
+        info.prom_type = static_cast<sexp_type>(TYPEOF(PRCODE(prom)));
+
+        rec.promise_created_process(info);
     }
 
     // Promise is being used inside a function body for the first time.

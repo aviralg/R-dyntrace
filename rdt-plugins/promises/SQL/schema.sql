@@ -41,7 +41,8 @@ create table if not exists calls (
 
 create table if not exists promises (
     --[ identity ]-------------------------------------------------------------
-    id integer primary key -- equal to promise pointer SEXP
+    id integer primary key, -- equal to promise pointer SEXP
+    type integer not null
 );
 
 create table if not exists promise_associations (
@@ -132,8 +133,6 @@ from promises
 join promise_evaluations on promise_associations.promise_id = promise_evaluations.promise_id
 join promise_associations on promise_associations.promise_id = promises.id
 join arguments on promise_associations.argument_id = arguments.id;
-
-
 
 create view if not exists function_arguments as
 select

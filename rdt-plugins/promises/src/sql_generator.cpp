@@ -90,11 +90,13 @@ namespace sql_generator {
         return statement.str();
     }
 
-    sql_stmt_t make_insert_promise_statement(sql_val_t id) {
+    sql_stmt_t make_insert_promise_statement(sql_val_t id, sql_val_t type) {
         stringstream statement;
 
         statement << "insert into promises values ("
                   << id
+                  << ","
+                  << type
                   << ");\n";
 
         return statement.str();

@@ -156,11 +156,11 @@ string unwind_info_line(TraceLinePrefix prefix, const call_id_t call_id, bool in
     return stream.str();
 }
 
-string promise_creation_info_line(TraceLinePrefix prefix, const prom_id_t & prom_id, bool indent, bool as_sql_comment) {
+string promise_creation_info_line(TraceLinePrefix prefix, const prom_basic_info_t & info, bool indent, bool as_sql_comment) {
     stringstream stream;
     prepend_prefix(stream, prefix, indent, as_sql_comment);
 
-    stream << "create promise id=" << prom_id << "\n";
+    stream << "create promise id=" << info.prom_id << " type=" << sexp_type_to_string(info.prom_type) << "\n";
 
     return stream.str();
 }
@@ -264,10 +264,10 @@ void trace_recorder_t::builtin_exit(const builtin_info_t & info) {
             tracer_conf.outputs);
 }
 
-void trace_recorder_t::promise_created(const prom_id_t & prom_id) {
+void trace_recorder_t::promise_created(const prom_basic_info_t & info) {
     string statement = promise_creation_info_line(
             TraceLinePrefix::ENTER_AND_EXIT,
-            prom_id,
+            info,
             tracer_conf.pretty_print,
             /*as_sql_comment=*/render_as_sql_comment);
 

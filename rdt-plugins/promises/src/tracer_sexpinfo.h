@@ -165,13 +165,15 @@ struct closure_info_t : call_info_t {
 struct builtin_info_t : call_info_t {
 };
 
-// FIXME would it make sense to add type of action here?
-struct prom_info_t {
-    string        name;
+struct prom_basic_info_t {
     prom_id_t     prom_id;
+    sexp_type     prom_type;
+};
+
+struct prom_info_t : prom_basic_info_t {
+    string        name;
     call_id_t     in_call_id;
     call_id_t     from_call_id;
-    sexp_type     prom_type;
 };
 
 prom_id_t get_promise_id(SEXP promise);

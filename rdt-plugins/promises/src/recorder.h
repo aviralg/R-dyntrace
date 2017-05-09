@@ -167,7 +167,7 @@ private:
         info.prom_id = get_promise_id(promise_expression);
         info.in_call_id = STATE(fun_stack).top();
         info.from_call_id = STATE(promise_origin)[info.prom_id];
-        info.prom_type = static_cast<sexp_type >(TYPEOF(PRCODE(promise_expression)));
+        info.prom_type = static_cast<sexp_type>(TYPEOF(PRCODE(promise_expression)));
 
         return info;
     }
@@ -205,7 +205,7 @@ public:
     DELEGATE(builtin_exit, builtin_info_t)
     DELEGATE(force_promise_entry, prom_info_t)
     DELEGATE(force_promise_exit, prom_info_t)
-    DELEGATE(promise_created, prom_id_t)
+    DELEGATE(promise_created, prom_basic_info_t)
     DELEGATE(promise_lookup, prom_info_t)
 
     DELEGATE(init_recorder)
@@ -256,7 +256,7 @@ public:
     COMPOSE(builtin_exit, builtin_info_t)
     COMPOSE(force_promise_entry, prom_info_t)
     COMPOSE(force_promise_exit, prom_info_t)
-    COMPOSE(promise_created, prom_id_t)
+    COMPOSE(promise_created, prom_basic_info_t)
     COMPOSE(promise_lookup, prom_info_t)
 
     COMPOSE(init_recorder)
