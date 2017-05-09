@@ -160,7 +160,7 @@ string promise_creation_info_line(TraceLinePrefix prefix, const prom_basic_info_
     stringstream stream;
     prepend_prefix(stream, prefix, indent, as_sql_comment);
 
-    stream << "create promise id=" << info.prom_id << " type=" << sexp_type_to_string(info.prom_type) << "\n";
+    stream << "create promise id=" << info.prom_id << " type=" << prom_type_to_string(info.prom_type) << "\n";
 
     return stream.str();
 }
@@ -186,7 +186,7 @@ string promise_evaluation_info_line(TraceLinePrefix prefix, PromiseEvaluationEve
            << " id=" << info.prom_id
            << " in_call=" << num_pref << num_fmt << info.in_call_id
            << " from_call=" << num_pref << num_fmt << info.from_call_id
-           << " type=" << sexp_type_to_string(info.prom_type) //tools::enum_cast
+           << " type=" << prom_type_to_string(info.prom_type) //tools::enum_cast
            << "\n";
 
     return stream.str();

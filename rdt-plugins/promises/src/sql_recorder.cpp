@@ -63,7 +63,7 @@ sql_stmt_t insert_call_statement(const call_info_t & info) {
 }
 
 sql_stmt_t insert_promise_statement(const prom_basic_info_t & info) {
-    return make_insert_promise_statement(from_int(info.prom_id), from_int(tools::enum_cast(info.prom_type)));
+    return make_insert_promise_statement(from_int(info.prom_id), from_int(info.prom_type));
 }
 
 sql_stmt_t insert_promise_association_statement(const closure_info_t & info, bool align) {

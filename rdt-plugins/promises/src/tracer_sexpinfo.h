@@ -22,6 +22,7 @@ typedef intptr_t rsid_t;    // hexadecimal
 typedef rid_t prom_addr_t;  // hexadecimal
 typedef rid_t env_addr_t;   // hexadecimal
 typedef rsid_t prom_id_t;   // hexadecimal
+typedef SEXPTYPE prom_type_t;
 typedef rid_t call_id_t;    // integer TODO this is pedantic, but shouldn't this be int?
 
 typedef int fn_id_t;        // integer
@@ -142,7 +143,8 @@ enum class sexp_type {
     S4 = 25
 };
 
-string sexp_type_to_string(sexp_type s);
+string sexp_type_to_string(sexp_type);
+string prom_type_to_string(prom_type_t);
 
 struct call_info_t {
     function_type fn_type;
@@ -162,12 +164,11 @@ struct closure_info_t : call_info_t {
     arglist_t     arguments;
 };
 
-struct builtin_info_t : call_info_t {
-};
+struct builtin_info_t : call_info_t {};
 
 struct prom_basic_info_t {
     prom_id_t     prom_id;
-    sexp_type     prom_type;
+    prom_type_t   prom_type;
 };
 
 struct prom_info_t : prom_basic_info_t {

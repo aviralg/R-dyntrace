@@ -180,6 +180,10 @@ arglist_t get_arguments(SEXP op, SEXP rho) {
     return arguments;
 }
 
+string prom_type_to_string(prom_type_t s) {
+    return sexp_type_to_string(static_cast<sexp_type>(s));
+}
+
 string sexp_type_to_string(sexp_type s) {
     switch (s) {
         case sexp_type::NIL: return "null";

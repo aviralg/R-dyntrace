@@ -134,7 +134,7 @@ struct trace_promises {
         info.prom_id = make_promise_id(prom);
         STATE(fresh_promises).insert(info.prom_id);
 
-        info.prom_type = static_cast<sexp_type>(TYPEOF(PRCODE(prom)));
+        info.prom_type = TYPEOF(PRCODE(prom));
 
         rec.promise_created_process(info);
     }
