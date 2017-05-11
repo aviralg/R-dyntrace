@@ -134,6 +134,11 @@ struct trace_promises {
         info.prom_id = make_promise_id(prom);
         STATE(fresh_promises).insert(info.prom_id);
 
+        if (TYPEOF(prom) != PROMSXP) {
+            Rprintf("(%i %i)", TYPEOF(prom));
+            std::cin.ignore();
+        }
+
         info.prom_type = TYPEOF(PRCODE(prom));
 
         rec.promise_created_process(info);
@@ -142,16 +147,28 @@ struct trace_promises {
     // Promise is being used inside a function body for the first time.
     static void force_promise_entry(const SEXP symbol, const SEXP rho) {
         prom_info_t info = rec.force_promise_entry_get_info(symbol, rho);
+
+        if (tracer_conf.ignore_alien_promises && info.prom_id < 0)
+            return;
+
         rec.force_promise_entry_process(info);
     }
 
     static void force_promise_exit(const SEXP symbol, const SEXP rho, const SEXP val) {
         prom_info_t info = rec.force_promise_exit_get_info(symbol, rho);
+
+        if (tracer_conf.ignore_alien_promises && info.prom_id < 0)
+            return;
+
         rec.force_promise_exit_process(info);
     }
 
     static void promise_lookup(const SEXP symbol, const SEXP rho, const SEXP val) {
         prom_info_t info = rec.promise_lookup_get_info(symbol, rho);
+
+        if (tracer_conf.ignore_alien_promises && info.prom_id < 0)
+            return;
+
         rec.promise_lookup_process(info);
     }
 

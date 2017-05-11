@@ -183,6 +183,8 @@ sqlite3_stmt * populate_call_statement(const call_info_t & info) {
 }
 
 sqlite3_stmt * populate_promise_statement(const prom_basic_info_t info) {
+    Rprintf("%i,%i\n", info.prom_id, info.prom_type);
+
     sqlite3_bind_int(prepared_sql_insert_promise, 1, (int) info.prom_id);
     sqlite3_bind_int(prepared_sql_insert_promise, 2, (int) info.prom_type);
     return prepared_sql_insert_promise;
@@ -310,7 +312,7 @@ void psql_recorder_t::force_promise_entry(const prom_info_t & info) {
 
 void psql_recorder_t::promise_created(const prom_basic_info_t & info) {
 #ifdef RDT_SQLITE_SUPPORT
-    sqlite3_stmt *statement = populate_promise_statement(info); // TODO
+    sqlite3_stmt *statement = populate_promise_statement(info);
     multiplexer::output(
             multiplexer::payload_t(statement),
             tracer_conf.outputs);

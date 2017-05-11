@@ -5,6 +5,7 @@
 #ifndef R_3_3_1_RECORDER_H
 #define R_3_3_1_RECORDER_H
 
+#include <iostream>
 #include <tuple>
 #include <inspect.h>
 #include "tuple_for_each.h"
@@ -167,6 +168,11 @@ private:
         info.prom_id = get_promise_id(promise_expression);
         info.in_call_id = STATE(fun_stack).top();
         info.from_call_id = STATE(promise_origin)[info.prom_id];
+
+        if (TYPEOF(promise_expression) != PROMSXP) {
+            Rprintf("(%i %i)", TYPEOF(promise_expression), info.prom_id);
+            std::cin.ignore();
+        }
         info.prom_type = TYPEOF(PRCODE(promise_expression));
 
         return info;

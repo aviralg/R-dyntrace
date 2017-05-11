@@ -73,6 +73,7 @@ struct tracer_conf_t {
     option<bool> include_configuration;
     option<int> indent_width;
     option<bool> call_id_use_ptr_fmt;
+    option<bool> ignore_alien_promises;
 
     option<multiplexer::sink_arr_t> outputs;
 

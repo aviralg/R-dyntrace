@@ -1,5 +1,6 @@
 # requires dplyr, igraph, RSQLite
 
+#install.packages(c("dplyr","igraph","RSQLite"))
 #library(dplyr)
 #library(igraph)
 
@@ -108,7 +109,10 @@ promise_lifestyle_from_cg <- function(db, cg) {
 }
 
 # Derive a concrete call tree from a trace. This is a tree built on actual calls (not functions).
-concrete_call_tree_from_trace <- function(db) {
+concrete_call_tree_from_trace <- function(db, debug=TRUE) {
+    if (debug) write('[make cct] start', stderr())
+    start.time <- Sys.time()
+
     calls <- db %>% tbl("calls")
     functions <- db %>% tbl("functions")
     all_call_ids <- {
@@ -118,42 +122,70 @@ concrete_call_tree_from_trace <- function(db) {
     } %>% distinct(id) %>% arrange(id)
 
     # 1. define edges for call tree
-    cct <-
+    if (debug) write('[make cct] edges', stderr())
+    edges <-
         calls %>% mutate(id.s = as.character(id), parent_id.s = as.character(parent_id)) %>%
         select(parent_id.s, id.s) %>% rename(parent_id=parent_id.s, id=id.s) %>%
-        as.data.frame %>% apply(1, c) %>% c %>%
-        make_directed_graph
+        as.data.frame %>% apply(1, c) %>% c
 
-    # 2. fill in attributes: function name
-    V(cct)$label <-
-        (left_join(all_call_ids, calls, by="id") %>%
-        arrange(id) %>%
+    # 2. Prepare a list of vertices
+    if (debug) write('[make cct] vertices', stderr())
+    vertices <-
+        edges %>% unique
+
+    # 3. Prepare labels for vertices using function names
+    if (debug) write('[make cct] labels', stderr())
+    labels <-
+        (left_join(all_call_ids, calls, by="id") %>% arrange(id) %>%
         select(function_name) %>%
         as.data.frame)$function_name
 
-    # 3. fill in attributes: function types
-    V(cct)$type <-
-        (left_join(all_call_ids, calls, by="id") %>%
+    # 4. Designate types and color vertices
+    if (debug) write('[make cct] types and colors', stderr())
+    vertex.info <-
+        left_join(all_call_ids, calls, by="id") %>%
         left_join(functions %>% rename(function_id=id), by="function_id") %>%
-        mutate(htype = if (type == 0) "closure" else
+
+        mutate(human_readable_type =
+                       if (type == 0) "closure" else
                        if (type == 1) "built-in" else
                        if (type == 2) "special" else
                        if (type == 3) "primitive" else NULL) %>%
-        select(htype) %>%
-        as.data.frame)$htype
 
-    # 4. color tree by function type
-    V(cct)$color <- ifelse(V(cct)$type %in% c("closure", "built-in", NA), "green", "red")
+        mutate(color = if (type == 0 || type == 2) "green" else
+                       if (type == 1 || type == 3) "red" else NULL) %>%
 
-    # 5. weight edges by colors
-    E(cct)$weight <- get.edgelist(cct) %>% apply(1, function(edge) if (V(cct)[edge[2]]$color == "red") 0 else 1)
+        as.data.frame
+
+    # 5. Weigh edges based on types
+    if (debug) write('[make cct] edge weights', stderr())
+    weights <-
+        edges %>% matrix(ncol=2, byrow=TRUE) %>%
+        as.data.frame %>% mutate(id=as.integer(V2)) %>%
+        left_join(vertex.info, by="id") %>%
+        mutate(weight = ifelse(color == "green", 1, 0))
+
+    # 6. Put the graph together
+    if (debug) write('[make cct] create graph', stderr())
+    vertex.attributes <- list(name = vertices, label = labels, type = vertex.info$human_readable_types, color = vertex.info$color)
+    edge.attributes <- (weight = weights)
+
+    cct <- graph.empty(n = 0, directed = T)
+    cct <- add.vertices(cct, length(vertex.attributes$name), attr = vertex.attributes)
+    cct <- add.edges(cct, edges, attr = edge.attributes)
+
+    end.time <- Sys.time()
+    if(debug) write(paste("[make cct] done, elapsed time:", end.time - start.time), stderr())
 
     # Finally, return graph
     cct
 }
 
 # Uses a concrete call tree to classify each promise to be either forced locally, relayed, escaped, or not forced.
-promise_lifestyle_from_cct <- function(db, cct) {
+promise_lifestyle_from_cct <- function(db, cct, debug=TRUE) {
+    if (debug) write('[lifestyles] start', stderr())
+    start.time <- Sys.time()
+
     promises <- db %>% tbl("promises")
     promise_evaluations <- db %>% tbl("promise_evaluations")
 
@@ -161,7 +193,7 @@ promise_lifestyle_from_cct <- function(db, cct) {
         if (is.na(created) || is.na(forced))
             "virgin"
         else {
-            distance <- distances(cct, v=created, to=forced, mode="out")[1]
+            distance <- distances(cct, v=forced, to=created, mode="in")[1]
             if (distance == Inf)
                 "escaped"
             else if (distance == 0)
@@ -171,18 +203,30 @@ promise_lifestyle_from_cct <- function(db, cct) {
         }
     }
 
-    # by analogy to cg
-    left_join(promises, promise_evaluations, by=c("id" = "promise_id")) %>%
-    filter(is.na(event_type) || event_type == 15) %>%
-    rename(created_call_id=in_call_id) %>%
-    rename(forced_call_id=from_call_id) %>%
-    select(id, created_call_id, forced_call_id) %>%
-    mutate(created_call_id=as.character(created_call_id),
-    forced_call_id=as.character(forced_call_id)) %>%
-    group_by(id) %>% do(mutate(., locality=classify(created_call_id, forced_call_id)))
+    if (debug) write('[lifestyles] retrieve promise creation/force', stderr())
+    promises <- left_join(promises, promise_evaluations, by=c("id" = "promise_id")) %>%
+        filter(is.na(event_type) || event_type == 15) %>%
+        rename(created_call_id=in_call_id) %>%
+        rename(forced_call_id=from_call_id) %>%
+        select(id, created_call_id, forced_call_id) %>%
+        mutate(created_call_id=as.character(created_call_id),
+               forced_call_id=as.character(forced_call_id)) %>%
+        as.data.frame
+
+    if (debug) write('[lifestyles] classify promises', stderr())
+    lifestyles <-
+        promises %>%
+
+    lifestyles <-
+        promises %>% group_by(id) %>% do(mutate(., locality=classify(created_call_id, forced_call_id)))
+
+    end.time <- Sys.time()
+    if (debug) write(paste("[lifestyles] elapsed time:", end.time - start.time), stderr())
+
+    lifestyles
 }
 
-print_graph <- function(g, file="graph", size=20, labels=NULL) {
+print_graph <- function(g, file="graph", size=20, labels=NULL, layout=layout.reingold.tilford(g, root="0")) {
     color_function <- function(color) {
         ifelse(color == "red",   "#FFAAAA",
         ifelse(color == "green", "#A5C663",
@@ -190,7 +234,7 @@ print_graph <- function(g, file="graph", size=20, labels=NULL) {
     }
 
     pdf(paste(file, ".pdf", sep=""), height=size, width=size)
-    lo <- layout.auto(g)
+    lo <- layout #layout.auto(g)
     plot(0, type="n", ann=FALSE, axes=FALSE, xlim=extendrange(lo[,1]), ylim=extendrange(lo[,2]))
     plot.igraph(g, layout=lo, add=TRUE, rescale=FALSE,
                    edge.arrow.size = .75, edge.curved = seq(-0.3, 0.3, length = ecount(g)),
@@ -222,6 +266,48 @@ where_are_promises_evaluated_cct <- function(path="trace.sqlite") {
     cct <- concrete_call_tree_from_trace(db)
     cct.ls <- promise_lifestyle_from_cg(db,cct)
     cct.ls %>% group_by(locality) %>% count(locality)
+}
+
+what_type_of_promises_are_there <- function(path="trace.sqlite") {
+
+    namer <- function(type) {
+             if(type == 0) "NIL"
+        else if(type == 1) "SYM"
+        else if(type == 2) "LIST"
+        else if(type == 3) "CLOS"
+        else if(type == 4) "ENV"
+        else if(type == 5) "PROM"
+        else if(type == 6) "LANG"
+        else if(type == 7) "SPECIAL"
+        else if(type == 8) "BUILTIN"
+        else if(type == 9) "CHAR"
+        else if(type == 10) "LGL"
+        else if(type == 13) "INT"
+        else if(type == 14) "REAL"
+        else if(type == 15) "CPLX"
+        else if(type == 16) "STR"
+        else if(type == 17) "DOT"
+        else if(type == 18) "ANY"
+        else if(type == 19) "VEC"
+        else if(type == 20) "EXPR"
+        else if(type == 21) "BCODE"
+        else if(type == 22) "EXTRPTR"
+        else if(type == 23) "WEAKREF"
+        else if(type == 24) "RAW"
+        else if(type == 25) "S4"
+        else                 NULL
+    }
+
+    trivial <- c(0, 1, 9, 10, 13 , 14, 15, 16, 17, 19, 24)
+
+    db %>% tbl("promises") %>%
+    group_by(type) %>% count %>% group_by(type) %>%
+    do(mutate(., htype=namer(type), classification=ifelse(type %in% trivial, "trivial", "non-trivial"))) %>%
+    arrange(n)
+}
+
+how_many_promises_are_trivial <- function(path="trace.sqlite") {
+    what_type_of_promises_are_there(path) %>% group_by(classification) %>% summarise(count=sum(n))
 }
 
 #inner_join(cg.ls %>% rename(locality.cg=locality,creat.cg=created_function_id,force.cg=forced_function_id), cct.ls %>% rename(locality.cct=locality,creat.cct=created_function_id,force.cct=forced_function_id), by="id") %>% as.data.frame #%>% select (id, created_call_id, forced_call_id, locality.cg, locality.cct)

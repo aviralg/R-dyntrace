@@ -16,7 +16,8 @@ tracer_conf_t::tracer_conf_t() :
         reload_state(false),
         indent_width(4),
         call_id_use_ptr_fmt(false),
-        outputs(string({multiplexer::Sink::PRINT}))
+        outputs(string({multiplexer::Sink::PRINT})),
+        ignore_alien_promises(true)
 {}
 
 // Update configuration in a smart way
@@ -32,7 +33,8 @@ void tracer_conf_t::update(const tracer_conf_t & conf) {
             OPT_CHANGED(indent_width) ||
             OPT_CHANGED(call_id_use_ptr_fmt) ||
             OPT_CHANGED(outputs) ||
-            OPT_CHANGED(include_configuration);
+            OPT_CHANGED(include_configuration) ||
+            OPT_CHANGED(ignore_alien_promises);
 
     if (conf.overwrite || conf_changed) {
         *this = conf; // updates all members
@@ -104,6 +106,10 @@ tracer_conf_t get_config_from_R_options(SEXP options) {
     if (reload_state_option != NULL && reload_state_option != R_NilValue)
         conf.reload_state = LOGICAL(reload_state_option)[0] == TRUE;
     //Rprintf("overwrite_option=%p->%i\n", (overwrite_option), overwrite);
+
+    SEXP ignore_alien_promises = get_named_list_element(options, "ignore.alien.promises");
+    if (ignore_alien_promises != NULL && ignore_alien_promises != R_NilValue)
+        conf.ignore_alien_promises = LOGICAL(ignore_alien_promises)[0] == TRUE;
 
     return conf;
 }
