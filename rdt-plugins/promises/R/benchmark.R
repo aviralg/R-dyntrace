@@ -15,6 +15,18 @@ custom.executor <- function(executor, path)
 
 #start <- proc.time()
 
+#base.packs <- list.files("src/library/base/R", pattern = "\\.R$", full.names=TRUE)
+# library("compiler")
+#for (p in base.packs) {
+#    pc <- paste(p,"c", sep="")
+    #if(!file.exists(pc)) {
+    #    cmpfile(p) 
+    #}
+    #loadcmp(pc)
+#    source(p)
+#}
+# #detach("package:compiler", unload=TRUE)
+
 for (p in packages) {
     print(p)
     run.all.vignettes.from.package(p, custom.executor(trace.promises.db, path=paste(DIR, p, ".sqlite", sep="")))
