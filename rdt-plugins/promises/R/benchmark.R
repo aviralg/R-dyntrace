@@ -1,6 +1,6 @@
 # Run as: Rscript file argv
 
-DIR="./"
+DIR="/data/kondziu/uncompiled/"
 
 packages = commandArgs(trailingOnly = TRUE)
 
