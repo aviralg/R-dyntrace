@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include <rdt.h>
+#include <sstream>
 
 rid_t get_sexp_address(SEXP e) {
     return (rid_t)e;
@@ -221,4 +222,102 @@ string sexp_type_to_string(sexp_type s) {
         case sexp_type::S4: return "s4";
         default: return "<unknown>";
      }
+}
+
+string of_call_info(call_info_t info){
+    stringstream s;
+    s << "fn_type=" << tools::enum_cast(info.fn_type);
+    s << " fn_id=" << info.fn_id;
+    s << " fn_addr=" << info.fn_addr;
+    s << " fn_definition=" << info.fn_definition;
+    s << " loc_=" << info.loc;
+    s << " callsite_=" << info.callsite;
+    s << " fn_compiled_=" << info.fn_compiled;
+    s << " name=" << info.name;
+    s << " call_id=" << info.call_id;
+    s << " call_ptr=" << info.call_ptr;
+    s << " parent_call_id=" << info.call_id;
+    return s.str();
+}
+
+string of_closure_info(closure_info_t info){
+    stringstream s;
+    s << "fn_type=" << tools::enum_cast(info.fn_type);
+    s << " fn_id=" << info.fn_id;
+    s << " fn_addr=" << info.fn_addr;
+    s << " fn_definition=" << info.fn_definition;
+    s << " loc_=" << info.loc;
+    s << " callsite_=" << info.callsite;
+    s << " fn_compiled_=" << info.fn_compiled;
+    s << " name=" << info.name;
+    s << " call_id=" << info.call_id;
+    s << " call_ptr=" << info.call_ptr;
+    s << " parent_call_id=" << info.call_id;
+
+    s << " arguments=";
+    bool first = true;
+    for (auto arg_ref : info.arguments.all()) {
+        const arg_t & argument = arg_ref.get();
+
+        if (first)
+            first = false;
+        else
+            s << ",";
+
+        s << "{" << get<0>(argument) << "," << get<1>(argument) << "}";
+    }
+    return s.str();
+}
+
+string of_builtin_info(builtin_info_t info){
+    stringstream s;
+    s << "fn_type=" << tools::enum_cast(info.fn_type);
+    s << " fn_id=" << info.fn_id;
+    s << " fn_addr=" << info.fn_addr;
+    s << " fn_definition=" << info.fn_definition;
+    s << " loc_=" << info.loc;
+    s << " callsite_=" << info.callsite;
+    s << " fn_compiled_=" << info.fn_compiled;
+    s << " name=" << info.name;
+    s << " call_id=" << info.call_id;
+    s << " call_ptr=" << info.call_ptr;
+    s << " parent_call_id=" << info.call_id;
+    return s.str();
+}
+
+//struct prom_basic_info_t {
+//    prom_id_t     prom_id;
+//    sexp_type     prom_type;
+//    sexp_type     prom_original_type; // if prom_type is BCODE, then this points what the BCODESXP was compiled from
+//};
+//
+//struct prom_info_t : prom_basic_info_t {
+//    string          name;
+//    call_id_t       in_call_id;
+//    call_id_t       from_call_id;
+//    lifestyle_type  lifestyle;
+//    int             effective_distance_from_origin;
+//    int             actual_distance_from_origin;
+//};
+
+string of_prom_info(prom_info_t info){
+    stringstream s;
+    s << "prom_id=" << info.prom_id;
+    s << " prom_type=" << tools::enum_cast(info.prom_type);
+    s << " prom_original_type=" << tools::enum_cast(info.prom_original_type);
+    s << " name=" << info.name;
+    s << " in_call_id=" << info.in_call_id;
+    s << " from_call_id=" << info.from_call_id;
+    s << " lifestyle=" << tools::enum_cast(info.lifestyle);
+    s << " effective_distance=" << info.effective_distance_from_origin;
+    s << " actual_distance=" << info.actual_distance_from_origin;
+    return s.str();
+}
+
+string of_prom_basic_info(prom_basic_info_t info){
+    stringstream s;
+    s << "prom_id=" << info.prom_id;
+    s << " prom_type=" << tools::enum_cast(info.prom_type);
+    s << " prom_original_type=" << tools::enum_cast(info.prom_original_type);
+    return s.str();
 }
