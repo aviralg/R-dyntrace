@@ -236,7 +236,7 @@ string of_call_info(call_info_t info){
     s << " name=" << info.name;
     s << " call_id=" << info.call_id;
     s << " call_ptr=" << info.call_ptr;
-    s << " parent_call_id=" << info.call_id;
+    s << " parent_call_id=" << info.parent_call_id;
     return s.str();
 }
 
@@ -252,7 +252,7 @@ string of_closure_info(closure_info_t info){
     s << " name=" << info.name;
     s << " call_id=" << info.call_id;
     s << " call_ptr=" << info.call_ptr;
-    s << " parent_call_id=" << info.call_id;
+    s << " parent_call_id=" << info.parent_call_id;
 
     s << " arguments=";
     bool first = true;
@@ -281,7 +281,7 @@ string of_builtin_info(builtin_info_t info){
     s << " name=" << info.name;
     s << " call_id=" << info.call_id;
     s << " call_ptr=" << info.call_ptr;
-    s << " parent_call_id=" << info.call_id;
+    s << " parent_call_id=" << info.parent_call_id;
     return s.str();
 }
 
