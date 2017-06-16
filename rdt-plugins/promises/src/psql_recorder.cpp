@@ -155,10 +155,12 @@ sqlite3_stmt * populate_arguments_statement(const closure_info_t & info) {
         const arg_t & argument = arg_ref.get();
         int offset = index * 4;
 
+        //cerr << get<1>(argument) << " " <<  get<0>(argument) << " " << index << " " << info.call_id << "\n";
+
         sqlite3_bind_int(prepared_statement, offset + 1, get<1>(argument));
         sqlite3_bind_text(prepared_statement, offset + 2, get<0>(argument).c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_int(prepared_statement, offset + 3, index);
-        sqlite3_bind_int(prepared_statement, offset + 4, info.fn_id);
+        sqlite3_bind_int(prepared_statement, offset + 3, index); // FIXME broken or unnecessary (pick one)
+        sqlite3_bind_int(prepared_statement, offset + 4, info.call_id);
 
         // Rprintf("binding %i %i: %i\n", index, offset + 1, get<1>(argument));
         // Rprintf("binding %i %i: %s\n", index, offset + 2, get<0>(argument).c_str());
@@ -275,7 +277,7 @@ void psql_recorder_t::function_entry(const closure_info_t & info) {
                 tracer_conf.outputs);
     }
 
-    if (need_to_insert && info.arguments.size() > 0) {
+    if (info.arguments.size() > 0) {
         sqlite3_stmt * statement = populate_arguments_statement(info);
         multiplexer::output(
                 multiplexer::payload_t(statement),
@@ -419,7 +421,7 @@ void psql_recorder_t::start_trace() {
         multiplexer::int_result min_promise_id;
         multiplexer::int_result max_argument_id;
         multiplexer::string_to_int_map_result functions;
-        multiplexer::int_string_to_int_map_result arguments;
+        multiplexer::ulong_string_to_ulong_map_result  arguments;
 
         multiplexer::int_set_result already_inserted_functions;
         multiplexer::int_set_result already_inserted_negative_promises;
