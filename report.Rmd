@@ -19,8 +19,8 @@ db <- src_sqlite(path)
 promises <- db %>% tbl("promises")
 promise_evaluations <- db %>% tbl("promise_evaluations")
 promise_associations <- db %>% tbl("promise_associations")
-calls <- db %>% tbl("calls")
-functions <- db %>% tbl("functions")
+calls <- db %>% tbl("calls") %>% rename(call_id = id)
+functions <- db %>% tbl("functions") %>% rename(function_id = id)
 arguments <- db %>% tbl("arguments")
 
 promise.forces <- promise_evaluations %>% filter(promise_id >= 0 && event_type == 15)
@@ -209,7 +209,7 @@ barplot(values, names.arg=labels, space=0)
 ### Promise types
 
 <div class="col2">
-``` {r promise-types-print, echo=FALSE, , comment=""}
+``` {r promise-types-print, echo=FALSE, comment=""}
 promise.types <- get_promise_types()
 promise.types
 ```
@@ -225,4 +225,30 @@ pie(slices, labels)
 ```
 </div>
 
-## Functions
+## Functions and Calls
+
+```{r function-calls, include=FALSE,}
+get_function_calls <- function(...) {
+  patterns <- list(...)
+  
+  data <- 
+    left_join(functions, calls, by="function_id") %>% 
+    select(function_name, function_id) %>% 
+    #distinct(function_name, function_id) %>% 
+    group_by(function_name, function_id) %>% count() %>% rename(number = n) %>%
+    mutate(percent = ((number * 100) / n.calls)) %>%
+    mutate(function_name = ifelse(is.na(function_name), "<anonymous>", function_name)) %>%
+    select(function_name, function_id, number, percent) %>%
+    collect(n=Inf)
+  
+  lapply(patterns, function(pattern) {filter(data, grepl(pattern, function_name))} ) %>% bind_rows
+}
+```
+
+```{r function-calls-selected-counts, echo=FALSE, comment=""}
+  get_function_calls("^<anonymous>$", "eval", "force", "delayAssign") %>% data.frame
+```
+
+### Calls to specific functions
+
+

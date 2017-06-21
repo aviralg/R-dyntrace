@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "tools.h"
+#include <iostream>
 
 #ifdef RDT_SQLITE_SUPPORT
 #include <sqlite3.h>
@@ -80,6 +81,8 @@ namespace multiplexer {
                 delete text;
         }
     };
+
+    std::string of_payload(payload_t);
 
     typedef std::string sink_arr_t;
 
@@ -161,6 +164,8 @@ namespace multiplexer {
 
     template<typename T>
     bool input(payload_t && payload, sink_arr_t outputs, T & result) {
+        std::cerr << "=> multiplexer::input " << of_payload(payload) << "," << outputs << ",..." << ")\n";
+
         for (auto output : outputs)
             switch (output) {
                 case Sink::PRINT:
@@ -218,6 +223,8 @@ namespace multiplexer {
                     return false;
 #endif
             }
+
+        std::cerr << "<= multiplexer::input " << of_payload(payload) << "," << outputs << ",..." << ")\n";
 
         return false;
     }

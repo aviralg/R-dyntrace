@@ -209,4 +209,10 @@ SEXP get_promise(SEXP var, SEXP rho);
 arg_id_t get_argument_id(call_id_t call_id, const string & argument);
 arglist_t get_arguments(call_id_t call_id, SEXP op, SEXP rho);
 
+string of_call_info(call_info_t);
+string of_closure_info(closure_info_t);
+string of_builtin_info(builtin_info_t);
+string of_prom_info(prom_info_t);
+string of_prom_basic_info(prom_basic_info_t);
+
 #endif //R_3_3_1_TRACER_SEXPINFO_H

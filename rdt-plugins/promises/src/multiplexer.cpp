@@ -18,6 +18,7 @@ namespace multiplexer {
 #endif
 
     bool init(sink_arr_t outputs, string file_path, bool overwrite) {
+        cerr << "=> multiplexer::init(" << outputs << "," << file_path << "," << overwrite << ")\n";
         set<Sink> already_initialized;
         bool return_value = true;
 
@@ -71,10 +72,14 @@ namespace multiplexer {
             }
         }
 
+        cerr << "<= multiplexer::init(" << outputs << "," << file_path << "," << overwrite << ")\n";
+
         return return_value;
     }
 
     bool close(sink_arr_t outputs) {
+        cerr << "=> multiplexer::close(" << outputs << ")\n";
+
         set<Sink> already_closed;
         bool return_value = true;
 
@@ -112,10 +117,13 @@ namespace multiplexer {
             }
         }
 
+        cerr << "<= multiplexer::close(" << outputs << ")\n";
         return return_value;
     }
 
     bool output(payload_t && payload, sink_arr_t outputs) {
+        cerr << "=> multiplexer::output(" << of_payload(payload) << "," << outputs << ")\n";
+
         bool return_value = true;
 
         for (auto output : outputs)
@@ -182,6 +190,15 @@ namespace multiplexer {
                     return_value = false;
             }
 
+        cerr << "<= multiplexer::output(" << of_payload(payload) << "," << outputs << ")\n";
+
         return return_value;
+    }
+
+    string of_payload(payload_t payload) {
+        if (payload.type == Payload::TEXT)
+            return "payload<TEXT>->\"" + *payload.text + "\"";
+        else
+            return "payload<PSQL>->\"" + string(sqlite3_sql(payload.prepared_statement)) + "\"";
     }
 }
