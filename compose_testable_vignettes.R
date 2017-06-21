@@ -143,7 +143,7 @@ execute.external.programs <- function(program.list, new.process=FALSE) {
       system2(cmd.with.args, env=sys.env, wait=TRUE)
       write(cmd.with.args, stdout())
     } else {
-      source(program.path, local=new.env()) #local=attach(NULL))
+      source(program.path, local=TRUE)#new.env()) #local=attach(NULL))
     }
     
     write(paste("[", i.programs, "/", n.programs, "] Done executing file: ", program.path, sep=""), stdout())
