@@ -1,6 +1,7 @@
 #!/bin/bash
 
-CMD='bin/Rscript rdt-plugins/promises/R/benchmark.R'
+#CMD='bin/Rscript rdt-plugins/promises/R/benchmark.R'
+CMD='bin/Rscript compose_testable_vignettes.R'
 
 PACKAGES=
 
@@ -18,7 +19,8 @@ echo > packages_done
 for i in $PACKAGES
 do 
     echo "$CMD $i"
-    time $CMD $i 2>&1 | tee "$i.log" 
+    valgrind --tool=memcheck --leak-check=full --show-reachable=yes \
+    $CMD $i 2>&1 | tee "$i.log" 
     echo "$i" >> packages_done
 done   
 
