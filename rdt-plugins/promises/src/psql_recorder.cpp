@@ -65,15 +65,19 @@ void free_prepared_sql_statement_cache(pstmt_cache *cache);
 #endif
 
 void compile_prepared_sql_schema_statements() {
+    cerr << "=> compile_prepared_sql_schema_statements()\n";
     prepared_sql_pragma_asynchronous =
             compile_sql_statement(make_pragma_statement("synchronous", "off"));
 
     // We must split the schema into separate statements;
     for (sql_stmt_t statement : split_into_individual_statements(make_create_tables_and_views_statement()))
         prepared_sql_create_tables_and_views.push_back(compile_sql_statement(statement));
+
+    cerr << "<= compile_prepared_sql_schema_statements()\n";
 }
 
 void compile_prepared_sql_statements() {
+    cerr << "=> compile_prepared_sql_statements()\n";
     prepared_sql_insert_function =
             compile_sql_statement(make_insert_function_statement("?","?","?","?","?"));
     prepared_sql_insert_call =
@@ -110,11 +114,14 @@ void compile_prepared_sql_statements() {
             compile_sql_statement(make_select_all_function_ids_statement());
     already_inserted_negative_promises_query =
             compile_sql_statement(make_select_all_negative_promise_ids_statement());
+    cerr << "<= compile_prepared_sql_statements()\n";
 }
 
 // Functions for populating prepared statements.
 
 sqlite3_stmt * populate_function_statement(const call_info_t & info) {
+    cerr << "=> populate_function_statement( " << of_call_info(info) << " )\n";
+
     sqlite3_bind_int(prepared_sql_insert_function, 1, info.fn_id);
 
     if (info.loc.empty())
@@ -131,10 +138,13 @@ sqlite3_stmt * populate_function_statement(const call_info_t & info) {
 
     sqlite3_bind_int(prepared_sql_insert_function, 5, info.fn_compiled ? 1 : 0);
 
+    cerr << "<= populate_function_statement( " << of_call_info(info) << " )\n";
     return prepared_sql_insert_function;
 }
 
 sqlite3_stmt * populate_arguments_statement(const closure_info_t & info) {
+    cerr << "=> populate_arguments_statement( " << of_closure_info(info) << " )\n";
+
     assert(info.arguments.size() > 0);
 
     sqlite3_stmt *prepared_statement = get_prepared_sql_insert_argument(info.arguments.size());
@@ -160,10 +170,14 @@ sqlite3_stmt * populate_arguments_statement(const closure_info_t & info) {
         index++;
     }
 
+    cerr << "<= populate_arguments_statement( " << of_closure_info(info) << " )\n";
+
     return prepared_statement;
 }
 
 sqlite3_stmt * populate_call_statement(const call_info_t & info) {
+    cerr << "=> populate_call_statement( " << of_call_info(info) << " )\n";
+
     sqlite3_bind_int(prepared_sql_insert_call, 1, (int)info.call_id);
     if (info.name.empty())
         sqlite3_bind_null(prepared_sql_insert_call, 2);
@@ -179,10 +193,14 @@ sqlite3_stmt * populate_call_statement(const call_info_t & info) {
 
     sqlite3_bind_int(prepared_sql_insert_call, 5, (int)info.parent_call_id);
 
+    cerr << "<= populate_call_statement( " << of_call_info(info) << " )\n";
+
     return prepared_sql_insert_call;
 }
 
 sqlite3_stmt * populate_promise_statement(const prom_basic_info_t info) {
+    cerr << "=> populate_promise_statement( " << of_prom_basic_info(info) << " )\n";
+
     sqlite3_bind_int(prepared_sql_insert_promise, 1, (int) info.prom_id);
     sqlite3_bind_int(prepared_sql_insert_promise, 2, tools::enum_cast(info.prom_type));
 
@@ -191,10 +209,14 @@ sqlite3_stmt * populate_promise_statement(const prom_basic_info_t info) {
     else
         sqlite3_bind_null(prepared_sql_insert_promise, 3);
 
+    cerr << "<= populate_promise_statement( " << of_prom_basic_info(info) << " )\n";
+
     return prepared_sql_insert_promise;
 }
 
 sqlite3_stmt * populate_promise_association_statement(const closure_info_t & info) {
+    cerr << "=> populate_promise_association_statement( " << of_closure_info(info) << " )\n";
+
     int num_of_arguments = info.arguments.size();
     assert(num_of_arguments > 0);
 
@@ -214,10 +236,14 @@ sqlite3_stmt * populate_promise_association_statement(const closure_info_t & inf
         index++;
     }
 
+    cerr << "<= populate_promise_association_statement( " << of_closure_info(info) << " )\n";
+
     return prepared_statement;
 }
 
 sqlite3_stmt * populate_promise_evaluation_statement(prom_eval_t type, const prom_info_t & info) {
+    cerr << "=> populate_promise_evaluation_statement( " << of_prom_info(info) << " )\n";
+
     sqlite3_bind_int(prepared_sql_insert_promise_eval, 1, STATE(clock_id++));
     sqlite3_bind_int(prepared_sql_insert_promise_eval, 2, type);
     sqlite3_bind_int(prepared_sql_insert_promise_eval, 3, info.prom_id);
@@ -230,12 +256,16 @@ sqlite3_stmt * populate_promise_evaluation_statement(prom_eval_t type, const pro
     // in_call_id = current call
     // from_call_id = parent call, for which the promise was created
 
+    cerr << "<= populate_promise_evaluation_statement( " << of_prom_info(info) << " )\n";
+
     return prepared_sql_insert_promise_eval;
 }
 
 // Functions connecting to the outside world, create SQL and multiplex output.
 
 void psql_recorder_t::function_entry(const closure_info_t & info) {
+    cerr << "=> function_entry( " << of_closure_info(info) << " )\n";
+
 #ifdef RDT_SQLITE_SUPPORT
     bool align_statements = tracer_conf.pretty_print;
     bool need_to_insert = register_inserted_function(info.fn_id);
@@ -270,9 +300,13 @@ void psql_recorder_t::function_entry(const closure_info_t & info) {
 #else
     // FIXME
 #endif
+
+    cerr << "<= function_entry( " << of_closure_info(info) << " )\n";
 }
 
 void psql_recorder_t::builtin_entry(const builtin_info_t & info) {
+    cerr << "=> builtin_entry( " << of_builtin_info(info) << " )\n";
+
 #ifdef RDT_SQLITE_SUPPORT
     bool need_to_insert = register_inserted_function(info.fn_id);
 
@@ -294,9 +328,13 @@ void psql_recorder_t::builtin_entry(const builtin_info_t & info) {
 #else
     // FIXME
 #endif
+
+    cerr << "<= builtin_entry( " << of_builtin_info(info) << " )\n";
 }
 
 void psql_recorder_t::force_promise_entry(const prom_info_t & info) {
+    cerr << "=> force_promise_entry( " << of_prom_info(info) << " )\n";
+
 #ifdef RDT_SQLITE_SUPPORT
     if (info.prom_id < 0) // if this is a promise from the outside
         if (!negative_promise_already_inserted(info.prom_id)) {
@@ -315,9 +353,13 @@ void psql_recorder_t::force_promise_entry(const prom_info_t & info) {
 #else
     // FIXME
 #endif
+
+    cerr << "<= force_promise_entry( " << of_prom_info(info) << " )\n";
 }
 
 void psql_recorder_t::promise_created(const prom_basic_info_t & info) {
+    cerr << "=> promise_created( " << of_prom_basic_info(info) << " )\n";
+
 #ifdef RDT_SQLITE_SUPPORT
     sqlite3_stmt *statement = populate_promise_statement(info);
     multiplexer::output(
@@ -326,9 +368,13 @@ void psql_recorder_t::promise_created(const prom_basic_info_t & info) {
 #else
     // FIXME
 #endif
+
+    cerr << "<= promise_created( " << of_prom_basic_info(info) << " )\n";
 }
 
 void psql_recorder_t::promise_lookup(const prom_info_t & info) {
+    cerr << "=> promise_lookup( " << of_prom_info(info) << " )\n";
+
 #ifdef RDT_SQLITE_SUPPORT
     sqlite3_stmt *statement = populate_promise_evaluation_statement(RDT_SQL_LOOKUP_PROMISE, info);
     multiplexer::output(
@@ -337,17 +383,14 @@ void psql_recorder_t::promise_lookup(const prom_info_t & info) {
 #else
     // FIXME
 #endif
+
+    cerr << "<= promise_lookup( " << of_prom_info(info) << " )\n";
 }
 
-void psql_recorder_t::init_recorder() {
-#ifdef RDT_SQLITE_SUPPORT
-
-#else
-    // FIXME
-#endif
-}
+void psql_recorder_t::init_recorder() {}
 
 void psql_recorder_t::start_trace() {
+    cerr << "=> start_trace()\n";
 #ifdef RDT_SQLITE_SUPPORT
     multiplexer::init(tracer_conf.outputs, tracer_conf.filename, tracer_conf.overwrite);
 
@@ -414,9 +457,11 @@ void psql_recorder_t::start_trace() {
 #else
     // FIXME
 #endif
+    cerr << "<= start_trace()\n";
 }
 
 void psql_recorder_t::finish_trace() {
+    cerr << "=> finish_trace()\n";
 #ifdef RDT_SQLITE_SUPPORT
     multiplexer::output(
             multiplexer::payload_t(prepared_sql_transaction_commit),
@@ -428,10 +473,12 @@ void psql_recorder_t::finish_trace() {
 #else
     // FIXME
 #endif
+    cerr << "<= finish_trace()\n";
 }
 
 #ifdef RDT_SQLITE_SUPPORT
 sqlite3_stmt * compile_sql_statement(sql_stmt_t statement) {
+    cerr << "=> compile_sql_statement(" << statement << ")\n";
     sqlite3_stmt *prepared_statement;
     int outcome = sqlite3_prepare_v2(multiplexer::sqlite_database,
                                      statement.c_str(), -1, &prepared_statement, NULL);
@@ -444,22 +491,28 @@ sqlite3_stmt * compile_sql_statement(sql_stmt_t statement) {
         return nullptr;
     }
 
+    cerr << "<= compile_sql_statement(" << statement << ")\n";
     return prepared_statement;
 }
 
 void free_prepared_sql_statement_cache(pstmt_cache & cache) {
+    cerr << "=> free_prepared_sql_statement(...)\n";
     for(auto const &entry : cache)
         sqlite3_finalize(entry.second);
     cache.clear();
+    cerr << "<= free_prepared_sql_statement(...)\n";
 }
 
 void free_prepared_sql_statement_vector(vector<sqlite3_stmt *> & list) {
+    cerr << "=> free_prepared_sql_statement_vector(...)\n";
     for(auto const &statement : list)
         sqlite3_finalize(statement);
     list.clear();
+    cerr << "<= free_prepared_sql_statement_vector(...)\n";
 }
 
 void free_prepared_sql_statements() {
+    cerr << "=> free_prepared_sql_statements()\n";
     sqlite3_finalize(prepared_sql_insert_function);
     sqlite3_finalize(prepared_sql_insert_call);
     sqlite3_finalize(prepared_sql_insert_promise);
@@ -486,9 +539,12 @@ void free_prepared_sql_statements() {
 
     free_prepared_sql_statement_cache(prepared_sql_insert_promise_assocs);
     free_prepared_sql_statement_cache(prepared_sql_insert_arguments);
+    cerr << "<= free_prepared_sql_statements()\n";
 }
 
 sqlite3_stmt * get_prepared_sql_insert_argument(int values) {
+    cerr << "=> get_prepared_sql_insert_argument(" << values << ")\n";
+
     if (prepared_sql_insert_arguments.count(values))
         return prepared_sql_insert_arguments[values];
 
@@ -500,10 +556,12 @@ sqlite3_stmt * get_prepared_sql_insert_argument(int values) {
     sqlite3_stmt *prepared_statement = compile_sql_statement(statement);
     prepared_sql_insert_arguments[values] = prepared_statement;
 
+    cerr << "<= get_prepared_sql_insert_argument(" << values << ")\n";
     return prepared_statement;
 }
 
 sqlite3_stmt * get_prepared_sql_insert_promise_assoc(int values) {
+    cerr << "=> get_prepared_sql_insert_promise_assoc(" << values << ")\n";
     if (prepared_sql_insert_promise_assocs.count(values))
         return prepared_sql_insert_promise_assocs[values];
 
@@ -515,6 +573,7 @@ sqlite3_stmt * get_prepared_sql_insert_promise_assoc(int values) {
     sqlite3_stmt *prepared_statement = compile_sql_statement(statement);
     prepared_sql_insert_promise_assocs[values] = prepared_statement;
 
+    cerr << "<= get_prepared_sql_insert_promise_assoc(" << values << ")\n";
     return prepared_statement;
 }
 #endif
