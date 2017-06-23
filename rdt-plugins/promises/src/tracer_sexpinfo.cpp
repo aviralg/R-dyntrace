@@ -9,15 +9,20 @@
 
 #include <rdt.h>
 #include <sstream>
+//#include <inspect.h>
 
 rid_t get_sexp_address(SEXP e) {
     return (rid_t)e;
 }
 
 prom_id_t get_promise_id(SEXP promise) {
+    cerr << "=> trace_sexpinfo::get_promise_id(...)\n";
+
     if (promise == R_NilValue)
         return RID_INVALID;
     if (TYPEOF(promise) != PROMSXP)
+
+
         return RID_INVALID;
 
     // A new promise is always created for each argument.
@@ -38,10 +43,14 @@ prom_id_t get_promise_id(SEXP promise) {
         prom_id = make_promise_id(promise, true);
     }
 
+    cerr << "<= trace_sexpinfo::get_promise_id(...)\n";
+
     return prom_id;
 }
 
 prom_id_t make_promise_id(SEXP promise, bool negative) {
+    cerr << "=> trace_sexpinfo::make_promise_id(...)\n";
+
     if (promise == R_NilValue)
         return RID_INVALID;
 
@@ -62,55 +71,82 @@ prom_id_t make_promise_id(SEXP promise, bool negative) {
     auto & already_inserted_negative_promises = STATE(already_inserted_negative_promises);
     already_inserted_negative_promises.insert(prom_id);
 
+    cerr << "<= trace_sexpinfo::get_promise_id(...)\n";
+
     return prom_id;
 }
 
 fn_id_t get_function_id(SEXP func) {
+    cerr << "=> trace_sexpinfo::get_function_id(...)\n";
+
+    cerr << "AAA";
+
     const char * def = get_expression(func);
+
     assert(def != NULL);
+
     fn_key_t definition = def;
 
     auto & function_ids = STATE(function_ids);
     auto it = function_ids.find(definition);
 
+
     if (it != function_ids.end()) {
+        cerr << "<= trace_sexpinfo::get_function_id(...)\n";
         return it->second;
     } else {
         fn_id_t fn_id = STATE(fn_id_counter)++;
         STATE(function_ids)[definition] = fn_id;
+        cerr << "<= trace_sexpinfo::get_function_id(...)\n";
         return fn_id;
     }
 }
 
 bool register_inserted_function(fn_id_t id) {
+    cerr << "=> trace_sexpinfo::register_inserted_function(" << id << ")\n";
+
     auto & already_inserted_functions = STATE(already_inserted_functions);
 //    bool exists = already_inserted_functions.count(id) > 0;
 //    if (exists)
 //        return false;
     auto result = already_inserted_functions.insert(id);
+
+    cerr << "<= trace_sexpinfo::register_inserted_function(" << id << ")\n";
     return result.second;
 //        return true
 }
 
 bool negative_promise_already_inserted(prom_id_t id) {
+    cerr << "=> trace_sexpinfo::negative_promise_already_inserted(" << id << ")\n";
     auto & already_inserted = STATE(already_inserted_negative_promises);
-    return already_inserted.count(id) > 0;
+    auto b = already_inserted.count(id) > 0;
+    cerr << "<= trace_sexpinfo::negative_promise_already_inserted(" << id << ")\n";
+    return b;
 }
 
 bool function_already_inserted(fn_id_t id) {
+    cerr << "=> trace_sexpinfo::function_already_inserted(" << id << ")\n";
     auto & already_inserted_functions = STATE(already_inserted_functions);
-    return already_inserted_functions.count(id) > 0;
+    auto b = already_inserted_functions.count(id) > 0;
+    cerr << "<= trace_sexpinfo::function_already_inserted(" << id << ")\n";
+    return b;
 }
 
 fn_addr_t get_function_addr(SEXP func) {
-    return get_sexp_address(func);
+    cerr << "=> trace_sexpinfo::get_function_addr(...)\n";
+    auto addr = get_sexp_address(func);
+    cerr << "<= trace_sexpinfo::get_function_addr(...)\n";
+    return addr;
 }
 
 call_id_t make_funcall_id(SEXP function) {
+    cerr << "=> trace_sexpinfo::make_funcall_id(...)\n";
     if (function == R_NilValue)
         return RID_INVALID;
 
-    return ++STATE(call_id_counter);
+    auto id = ++STATE(call_id_counter);
+    cerr << "<= trace_sexpinfo::make_funcall_id(...)\n";
+    return id;
 }
 
 // XXX This is a remnant of the RDT_CALL_ID format
@@ -121,6 +157,7 @@ call_id_t make_funcall_id(SEXP function) {
 
 // Wraper for findVar. Does not look up the value if it already is PROMSXP.
 SEXP get_promise(SEXP var, SEXP rho) {
+    cerr << "=> trace_sexpinfo::get_promise(...)\n";
     SEXP prom = R_NilValue;
 
     if (TYPEOF(var) == PROMSXP) {
@@ -128,11 +165,13 @@ SEXP get_promise(SEXP var, SEXP rho) {
     } else if (TYPEOF(var) == SYMSXP) {
         prom = findVar(var, rho);
     }
-
+    cerr << "<= trace_sexpinfo::get_promise(...)\n";
     return prom;
 }
 
 arg_id_t get_argument_id(call_id_t call_id, const string & argument) { // FIXME this is overcomplicated. A simple sequence should be enough, i think.
+    cerr << "=> trace_sexpinfo::get_argument_id(" << call_id << "," <<  argument << ")\n";
+
     arg_key_t key = make_pair(call_id, argument);
     auto iterator = STATE(argument_ids).find(key);
 
@@ -142,12 +181,17 @@ arg_id_t get_argument_id(call_id_t call_id, const string & argument) { // FIXME 
 
     arg_id_t argument_id = ++STATE(argument_id_sequence);
     STATE(argument_ids)[key] = argument_id;
+
+    cerr << "<= trace_sexpinfo::get_argument_id(" << call_id << "," <<  argument << ")\n";
     return argument_id;
 }
 
 
 
 arglist_t get_arguments(call_id_t call_id, SEXP op, SEXP rho) {
+    cerr << "=> trace_sexpinfo::get_arguments(" << call_id << ",...)\n";
+
+
     arglist_t arguments;
 
     for (SEXP formals = FORMALS(op); formals != R_NilValue; formals = CDR(formals)) {
@@ -190,7 +234,7 @@ arglist_t get_arguments(call_id_t call_id, SEXP op, SEXP rho) {
         }
 
     }
-
+    cerr << "<= trace_sexpinfo::get_arguments(" << call_id << ",...)\n";
     return arguments;
 }
 
@@ -225,6 +269,7 @@ string sexp_type_to_string(sexp_type s) {
 }
 
 string of_call_info(call_info_t info){
+    cerr << "=> trace_sexpinfo::of_call_info(...)\n";
     stringstream s;
     s << "fn_type=" << tools::enum_cast(info.fn_type);
     s << " fn_id=" << info.fn_id;
@@ -237,10 +282,12 @@ string of_call_info(call_info_t info){
     s << " call_id=" << info.call_id;
     s << " call_ptr=" << info.call_ptr;
     s << " parent_call_id=" << info.parent_call_id;
+    cerr << "<= trace_sexpinfo::of_call_info(...)\n";
     return s.str();
 }
 
 string of_closure_info(closure_info_t info){
+    cerr << "=> trace_sexpinfo::of_closure_info(...)\n";
     stringstream s;
     s << "fn_type=" << tools::enum_cast(info.fn_type);
     s << " fn_id=" << info.fn_id;
@@ -266,10 +313,12 @@ string of_closure_info(closure_info_t info){
 
         s << "{" << get<0>(argument) << "," << get<1>(argument) << "}";
     }
+    cerr << "<= trace_sexpinfo::of_closure_info(...)\n";
     return s.str();
 }
 
 string of_builtin_info(builtin_info_t info){
+    cerr << "=> trace_sexpinfo::of_builtin_info(...)\n";
     stringstream s;
     s << "fn_type=" << tools::enum_cast(info.fn_type);
     s << " fn_id=" << info.fn_id;
@@ -282,6 +331,7 @@ string of_builtin_info(builtin_info_t info){
     s << " call_id=" << info.call_id;
     s << " call_ptr=" << info.call_ptr;
     s << " parent_call_id=" << info.parent_call_id;
+    cerr << "<= trace_sexpinfo::of_builtin_info(...)\n";
     return s.str();
 }
 
@@ -301,6 +351,7 @@ string of_builtin_info(builtin_info_t info){
 //};
 
 string of_prom_info(prom_info_t info){
+    cerr << "=> trace_sexpinfo::of_prom_info(...)\n";
     stringstream s;
     s << "prom_id=" << info.prom_id;
     s << " prom_type=" << tools::enum_cast(info.prom_type);
@@ -311,13 +362,16 @@ string of_prom_info(prom_info_t info){
     s << " lifestyle=" << tools::enum_cast(info.lifestyle);
     s << " effective_distance=" << info.effective_distance_from_origin;
     s << " actual_distance=" << info.actual_distance_from_origin;
+    cerr << "<= trace_sexpinfo::of_prom_info(...)\n";
     return s.str();
 }
 
 string of_prom_basic_info(prom_basic_info_t info){
+    cerr << "=> trace_sexpinfo::of_prom_basic_info(...)\n";
     stringstream s;
     s << "prom_id=" << info.prom_id;
     s << " prom_type=" << tools::enum_cast(info.prom_type);
     s << " prom_original_type=" << tools::enum_cast(info.prom_original_type);
+    cerr << "<= trace_sexpinfo::of_prom_basic_info(...)\n";
     return s.str();
 }

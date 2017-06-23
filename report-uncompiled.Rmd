@@ -28,7 +28,7 @@ promise_evaluations <- db %>% tbl("promise_evaluations")
 promise_associations <- db %>% tbl("promise_associations")
 calls <- db %>% tbl("calls") %>% rename(call_id = id)
 functions <- db %>% tbl("functions") %>% rename(function_id = id)
-arguments <- db %>% tbl("arguments")
+arguments <- db %>% tbl("arguments") %>% rename(argument_id = id)
 
 promise.forces <- promise_evaluations %>% filter(promise_id >= 0 && event_type == 15)
 promise.lookups <- promise_evaluations %>% filter(promise_id >= 0 && event_type == 0)
@@ -292,7 +292,81 @@ pie(slices, labels, main="Promise types")
 
 ### Strictness
 
+```{r function-strictness, include=FALSE}
+get_functions_by_names <- function(...) {
+  patterns <- list(...)
+  lapply(patterns, function(pattern) {calls %>% data.frame %>% filter(grepl(pattern, function_name))} ) %>% bind_rows %>% 
+  group_by(function_id, function_name) %>% summarise
+}
 
+get_function_strictness_by_name <- function(...) {
+  get_functions_by_names(...) %>% select(function_id) %>% 
+    inner_join(calls, by = "function_id", copy=TRUE) %>% 
+    get_call_strictness(copy=TRUE)
+}
+
+get_function_strictness <- function(function.id) {
+  f.calls <- calls %>% filter(function_id == function.id)
+  get_call_strictness(f.calls)
+}
+
+get_call_strictness <- function(f.calls, copy=FALSE) {
+  f.info <- 
+    f.calls %>% 
+    left_join(arguments, by="call_id", copy=copy) %>% 
+    left_join(promise_associations, by = c("call_id" = "call_id", "argument_id" = "argument_id"), copy=copy) %>% 
+    left_join(promise_evaluations, by = "promise_id", copy=copy) %>% data.frame() %>% arrange(call_id, argument_id, clock) %>% 
+    mutate(
+      symbol = 
+        ifelse(is.na(name), 
+               "",
+               paste(
+                 ifelse(is.na(effective_distance_from_origin), "", ifelse(effective_distance_from_origin == -1, "?", ifelse(effective_distance_from_origin == 0, "", "*"))),
+                 name, 
+                 "", 
+                 ifelse(is.na(event_type), "∅", ifelse(event_type==15,"!","~")), sep=""
+               )
+        )
+    )
+  
+  full_strictness_signature <- 
+    f.info %>% group_by(call_id) %>% 
+    arrange(call_id, clock) %>%
+    summarise(function_id = unique(function_id),
+              function_name = unique(function_name),
+              function_arguments = paste0(unique(name), collapse=" "),
+              callsite = unique(callsite),
+              parent_id = unique(parent_id),
+              full_strictness_signature = paste0(symbol, collapse=" ")
+    ) 
+  
+  short_strictness_signature <-
+    f.info %>% filter(event_type == 15) %>% 
+    group_by(call_id) %>% arrange(call_id, clock) %>%
+    summarise(strictness_signature = paste0(symbol, collapse=" "))
+  
+  local_strictness_signature <-
+    f.info %>% filter(event_type == 15, effective_distance_from_origin == 0) %>% 
+    group_by(call_id) %>% arrange(call_id, clock) %>%
+    summarise(local_strictness_signature = paste0(symbol, collapse=" "))
+  
+  left_join(full_strictness_signature, short_strictness_signature, by="call_id") %>%
+    left_join(local_strictness_signature, by="call_id")  %>% 
+    mutate(
+      strictness_signature = ifelse(is.na(strictness_signature), "", strictness_signature),
+      local_strictness_signature = ifelse(is.na(local_strictness_signature), "", local_strictness_signature)
+    )
+}
+
+```
+
+```{r function-strictness-selected-counts, echo=FALSE, comment=""}
+  get_function_strictness_by_name("^<anonymous>$", "eval", "force", "delayAssign", "return") %>% 
+  select(function_id, function_name, full_strictness_signature, local_strictness_signature) %>% 
+  data.frame
+
+
+```
 
 ### Calls to specific functions
 
@@ -312,10 +386,14 @@ get_function_calls <- function(...) {
   
   lapply(patterns, function(pattern) {filter(data, grepl(pattern, function_name))} ) %>% bind_rows
 }
+
+
 ```
 
 ```{r function-calls-selected-counts, echo=FALSE, comment=""}
   get_function_calls("^<anonymous>$", "eval", "force", "delayAssign", "return") %>% data.frame
+
+
 ```
 
 

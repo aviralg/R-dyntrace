@@ -19,6 +19,8 @@ static void internal_eval(void *data) {
 }
 
 SEXP Rdt(SEXP tracer, SEXP rho, SEXP options) {
+    fprintf(stderr, "=> Rdt");
+
     if (rdt_is_running()) {
         if (handler) free(handler);
 
@@ -64,5 +66,7 @@ SEXP Rdt(SEXP tracer, SEXP rho, SEXP options) {
     // Missing cleanup_tracing function is not an error
 
     rdt_stop();
+
+    fprintf(stderr, "<= Rdt");
     return R_TrueValue; // TODO Why does this return TRUE and not the return value of the expression anyway?
 }

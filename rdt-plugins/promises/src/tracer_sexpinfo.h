@@ -9,6 +9,7 @@
 #include <vector>
 #include <functional>
 #include <cassert>
+#include <iostream>
 
 #include <r.h>
 
@@ -46,6 +47,8 @@ class arglist_t {
 
     template<typename T>
     void push_back_tmpl(T&& value, bool ddd) {
+        cerr << "=> trace_sexpinfo::push_back_tmpl(...)\n";
+
         if (ddd) {
             arg_t new_value = value;
             string & arg_name = get<0>(new_value);
@@ -56,16 +59,22 @@ class arglist_t {
             args.push_back(forward<T>(value));
         }
         update_arg_refs = true;
+
+        cerr << "<= trace_sexpinfo::push_back_tmpl(...)\n";
     }
 
     template<typename T>
     void push_back_anon_tmpl(T&& value) {
+        cerr << "=> trace_sexpinfo::push_back_anon_tmpl(...)\n";
+
         string arg_name = "...[" + to_string(ddd_pos_args.size()) + "]";
         // prepend string arg_name to anon_arg_t value
         arg_t new_value = tuple_cat(make_tuple(arg_name), value);
 
         ddd_pos_args.push_back(new_value);
         update_arg_refs = true;
+
+        cerr << "<= trace_sexpinfo::push_back_anon_tmpl(...)\n";
     }
 public:
     arglist_t() {
@@ -91,6 +100,8 @@ public:
     // Return vector of references to elements of our three inner vectors
     // so we can iterate over all of them in one for loop.
     vector<reference_wrapper<const arg_t>> all() const {
+        cerr << "=> trace_sexpinfo::all(...)\n";
+
         if (update_arg_refs) {
             arg_refs.assign(args.begin(), args.end());
             arg_refs.insert(arg_refs.end(), ddd_kw_args.begin(), ddd_kw_args.end());
@@ -98,14 +109,18 @@ public:
             update_arg_refs = false;
         }
 
+        cerr << "<= trace_sexpinfo::all(...)\n";
         return arg_refs;
     }
 
     size_t size() const {
+        cerr << "=> trace_sexpinfo::size(...)\n";
         if (update_arg_refs) {
             all();
         }
-        return arg_refs.size();
+        size_t s = arg_refs.size();
+        cerr << "<= trace_sexpinfo::size(...)\n";
+        return s;
     }
 };
 

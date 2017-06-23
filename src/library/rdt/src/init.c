@@ -23,10 +23,14 @@ void
 __attribute__ ((visibility ("default")))
 #endif
 R_init_rdt(DllInfo *dll) {
+    fprintf(stderr, "=> R_init_rdt\n");
+
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
     R_forceSymbols(dll, TRUE);
 
     // Store dll handle for dynamic function lookup (used in rdt.c)
     init_dll_handle(dll->handle);
+
+    fprintf(stderr, "<= R_init_rdt\n");
 }

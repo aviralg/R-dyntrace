@@ -8,6 +8,8 @@
 #include "tracer_sexpinfo.h"
 
 void tracer_state_t::start_pass(const SEXP prom) {
+    cerr << "=> tracer_state::start_pass(...)\n";
+
     if (tracer_conf.overwrite) {
         reset();
     }
@@ -24,17 +26,23 @@ void tracer_state_t::start_pass(const SEXP prom) {
     prom_addr_t prom_addr = get_sexp_address(prom);
     prom_id_t prom_id = make_promise_id(prom);
     promise_origin[prom_id] = 0;
+
+    cerr << "<= tracer_state::start_pass(...)\n";
 }
 
 void tracer_state_t::finish_pass() {
+    cerr << "=> tracer_state::finish_pass(...)\n";
     fun_stack.pop_back();
     curr_env_stack.pop();
 
     promise_origin.clear();
+    cerr << "<= tracer_state::finish_pass(...)\n";
 }
 
 // TODO returning call ids through a vector. seems kludgy... is there a better way to do this?
 void tracer_state_t::adjust_fun_stack(SEXP rho, vector<call_id_t> & unwound_calls) {
+    cerr << "=> tracer_state::adjust_fun_stack(...)\n";
+
     call_id_t call_id;
     env_addr_t call_addr;
 
@@ -50,6 +58,8 @@ void tracer_state_t::adjust_fun_stack(SEXP rho, vector<call_id_t> & unwound_call
 
         unwound_calls.push_back(call_id);
     }
+
+    cerr << "<= tracer_state::adjust_fun_stack(...)\n";
 }
 
 tracer_state_t::tracer_state_t() {

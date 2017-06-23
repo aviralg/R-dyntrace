@@ -271,7 +271,7 @@ void trace_recorder_t::function_exit(const closure_info_t & info) {
             tracer_conf.outputs);
 }
 
-void trace_recorder_t::builtin_entry(const builtin_info_t & info) {
+void trace_recorder_t::builtin_entry(const builtin_info_t & info) { // XXX
     string statement = builtin_or_special_call_info_line(
             TraceLinePrefix::ENTER,
             info,

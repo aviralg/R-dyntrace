@@ -35,6 +35,8 @@ void init_dll_handle(void * handle) {
 }
 
 static std::string infer_lib_location(const std::string &path, const std::string &fn_name) {
+    fprintf(stderr, "=> infer_lib_location\n");
+
     std::regex tracer_name_ex("[^_]*_([^_]*)_.*");
     std::smatch tracer_name_match;
     std::string tracer_name;
@@ -46,10 +48,14 @@ static std::string infer_lib_location(const std::string &path, const std::string
         }
     }
 
+    fprintf(stderr, "<= infer_lib_location\n");
+
     return "";
 }
 
 void * find_fn_by_name(const char * format, ...) {
+    fprintf(stderr, "=> find_fn_by_name\n");
+
     void * fn_ptr = NULL;
     char * fn_name;
     va_list args;
@@ -81,6 +87,8 @@ void * find_fn_by_name(const char * format, ...) {
     }
 
     free(fn_name);
+
+    fprintf(stderr, "<= find_fn_by_name\n");
 
     return fn_ptr;
 }

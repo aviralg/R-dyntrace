@@ -8,6 +8,7 @@
 #include <tuple>
 #include <inspect.h>
 #include "tuple_for_each.h"
+#include <iostream>
 
 //#include <Defn.h> // We need this for R_Funtab
 #include <rdt.h>
@@ -23,6 +24,8 @@ protected:
 
 public:
     closure_info_t function_entry_get_info(const SEXP call, const SEXP op, const SEXP rho) {
+        cerr << "=> recorder.h::function_entry_get_info(...)\n";
+
         closure_info_t info;
 
         const char *name = get_name(call);
@@ -59,10 +62,14 @@ public:
         info.arguments = get_arguments(info.call_id, op, rho);
         info.fn_definition = get_expression(op);
 
+        cerr << "<= recorder.h::function_entry_get_info(...)\n";
+
         return info;
     }
 
     closure_info_t function_exit_get_info(const SEXP call, const SEXP op, const SEXP rho) {
+        cerr << "=> recorder.h::function_exit_get_info(...)\n";
+
         closure_info_t info;
 
         const char *name = get_name(call);
@@ -99,10 +106,15 @@ public:
         call_stack_elem_t elem_parent = STATE(fun_stack).back();
         info.parent_call_id = elem_parent.first;
 
+        cerr << "<= recorder.h::function_exit_get_info(...)\n";
+
         return info;
     }
 
     builtin_info_t builtin_entry_get_info(const SEXP call, const SEXP op, const SEXP rho, function_type fn_type) {
+        cerr << "=> recorder.h::builtin_entry_get_info(...)\n";
+
+
         builtin_info_t info;
 
         const char *name = get_name(call);
@@ -123,13 +135,14 @@ public:
         char *location = get_location(op);
         if (location != NULL) {
             info.loc = location;
+            free(location);             // FIXME bughunt: just in case
         }
-        free(location);
 
         char *callsite = get_callsite(0);
-        if (callsite != NULL)
+        if (callsite != NULL) {
             info.callsite = callsite;
-        free(callsite);
+            free(callsite);           // FIXME bughunt: just in case
+        }
 
         info.call_ptr = get_sexp_address(rho);
         info.call_id = make_funcall_id(op);
@@ -140,11 +153,14 @@ public:
         // it will be unique because real pointers are aligned (no odd addresses)
         // info.call_id = make_funcall_id(rho) | 1;
 
+        cerr << "<= recorder.h::builtin_entry_get_info(...)\n";
 
         return info;
     }
 
     builtin_info_t builtin_exit_get_info(const SEXP call, const SEXP op, const SEXP rho, function_type fn_type) {
+        cerr << "=> recorder.h::builtin_exit_get_info(...)\n";
+
         builtin_info_t info;
 
         const char *name = get_name(call);
@@ -173,11 +189,15 @@ public:
             info.callsite = callsite;
         free(callsite);
 
+        cerr << "<= recorder.h::builtin_exit_get_info(...)\n";
+
         return info;
     }
 
 private:
     tuple<lifestyle_type, int, int> judge_promise_lifestyle(call_id_t from_call_id) {
+        cerr << "=> recorder.h::judge_promise_lifestyle( " << from_call_id << " )\n";
+
         int effective_distance = 0;
         int actual_distance = 0;
         for (vector<call_stack_elem_t>::reverse_iterator i = STATE(fun_stack).rbegin(); i != STATE(fun_stack).rend(); ++i) {
@@ -187,19 +207,24 @@ private:
             if (cursor == from_call_id)
                 if (effective_distance == 0) {
                     if (actual_distance == 0){
+                        cerr << "<= recorder.h::judge_promise_lifestyle( " << from_call_id << " )\n";
                         return tuple<lifestyle_type, int, int>(lifestyle_type::IMMEDIATE_LOCAL, effective_distance, actual_distance);
                     } else {
+                        cerr << "<= recorder.h::judge_promise_lifestyle( " << from_call_id << " )\n";
                         return tuple<lifestyle_type, int, int>(lifestyle_type::LOCAL, effective_distance, actual_distance);
                     }
                 } else {
                     if (effective_distance == 1) {
+                        cerr << "<= recorder.h::judge_promise_lifestyle( " << from_call_id << " )\n";
                         return tuple<lifestyle_type, int, int>(lifestyle_type::IMMEDIATE_BRANCH_LOCAL, effective_distance, actual_distance);
                     } else {
+                        cerr << "<= recorder.h::judge_promise_lifestyle( " << from_call_id << " )\n";
                         return tuple<lifestyle_type, int, int>(lifestyle_type::BRANCH_LOCAL, effective_distance, actual_distance);
                     }
                 }
 
             if (cursor == 0) {
+                cerr << "<= recorder.h::judge_promise_lifestyle( " << from_call_id << " )\n";
                 return tuple<lifestyle_type, int, int>(lifestyle_type::ESCAPED, -1, -1); // reached root, parent must be in a different branch--promise escaped
             }
 
@@ -208,9 +233,13 @@ private:
                 effective_distance++;
             }
         }
+
+        cerr << "<= recorder.h::judge_promise_lifestyle( " << from_call_id << " )\n";
     }
 
     prom_info_t promise_get_info(const SEXP symbol, const SEXP rho) {
+        cerr << "=> recorder.h::promise_get_nfo(...)\n";
+
         prom_info_t info;
 
         const char *name = get_name(symbol);
@@ -245,20 +274,32 @@ private:
             info.prom_original_type = info.prom_type;
         }
 
+        cerr << "<= recorder.h::promise_get_info(...)\n";
+
         return info;
     }
 
 public:
     prom_info_t force_promise_entry_get_info(const SEXP symbol, const SEXP rho) {
-        return promise_get_info(symbol, rho);
+        cerr << "=> recorder.h::force_promise_entry_get_info(...)\n";
+        auto info = promise_get_info(symbol, rho);
+        cerr << "<= recorder.h::force_promise_entry_get_info(...)\n";
+        return info;
     }
 
     prom_info_t force_promise_exit_get_info(const SEXP symbol, const SEXP rho) {
-        return promise_get_info(symbol, rho);
+        cerr << "=> recorder.h::force_promise_exit_get_info(...)\n";
+        auto info = promise_get_info(symbol, rho);
+        cerr << "<= recorder.h::force_promise_exit_get_info(...)\n";
+        return info;
+
     }
 
     prom_info_t promise_lookup_get_info(const SEXP symbol, const SEXP rho) {
-        return promise_get_info(symbol, rho);
+        cerr << "=> recorder.h::force_lookup_get_info(...)\n";
+        auto info = promise_get_info(symbol, rho);
+        cerr << "<= recorder.h::force_lookup_get_info(...)\n";
+        return info;
     }
 
 #define DELEGATE2(func, info_struct) \

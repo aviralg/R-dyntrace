@@ -19,6 +19,8 @@ const rdt_handler *rdt_curr_handler = &rdt_null_handler;
 //-----------------------------------------------------------------------------
 
 const char *get_ns_name(SEXP op) {
+    fprintf(stderr, "=> get_ns_name\n");
+
     SEXP env = CLOENV(op);
     SEXP spec = R_NamespaceEnvSpec(env);
 
@@ -30,10 +32,14 @@ const char *get_ns_name(SEXP op) {
         } 
     }
 
+    fprintf(stderr, "<= get_ns_name\n");
+
     return NULL;
 }
 
 const char *get_name(SEXP sexp) {
+    fprintf(stderr, "=> get_name\n");
+
     const char *s = NULL;
 
     switch(TYPEOF(sexp)) {
@@ -52,23 +58,31 @@ const char *get_name(SEXP sexp) {
             break;
     }
 
+    fprintf(stderr, "<= get_name\n");
+
     return s;
 }
 
 static int get_lineno(SEXP srcref) {
+    fprintf(stderr, "=> get_lineno\n");
     if (srcref && srcref != R_NilValue) {
 
         if (TYPEOF(srcref) == VECSXP) {
             srcref = VECTOR_ELT(srcref, 0);
         }
 
-        return asInteger(srcref);
-    } 
-    
+        int l = asInteger(srcref);
+        fprintf(stderr, "<= get_lineno\n");
+        return l;
+    }
+
+    fprintf(stderr, "<= get_lineno\n");
     return -1;               
 }
 
 static int get_colno(SEXP srcref) {
+    fprintf(stderr, "=> get_colno\n");
+
     if (srcref && srcref != R_NilValue) {
 
         if (TYPEOF(srcref) == VECSXP) {
@@ -86,32 +100,43 @@ static int get_colno(SEXP srcref) {
 
         if(TYPEOF(srcref) == INTSXP) {
             //lineno = INTEGER(srcref)[0];
-            return INTEGER(srcref)[4];
+            int c = INTEGER(srcref)[4];
+            fprintf(stderr, "<= get_colno\n");
+            return c;
         } else {
             // This should never happen, right?
+            fprintf(stderr, "<= get_colno\n");
             return -1;
         }
     }
 
+    fprintf(stderr, "<= get_colno\n");
     return -1;
 }
 
 static const char *get_filename(SEXP srcref) {
+    fprintf(stderr, "=> get_filename\n");
     if (srcref && srcref != R_NilValue) {
         if (TYPEOF(srcref) == VECSXP) srcref = VECTOR_ELT(srcref, 0);
         SEXP srcfile = getAttrib(srcref, R_SrcfileSymbol);
         if (TYPEOF(srcfile) == ENVSXP) {
             SEXP filename = findVar(install("filename"), srcfile);
             if (isString(filename) && length(filename)) {
-                return CHAR(STRING_ELT(filename, 0));
+                const char *s = CHAR(STRING_ELT(filename, 0));
+                fprintf(stderr, "<= get_filename\n");
+                return s;
             }
         }
     }
+
+    fprintf(stderr, "<= get_filename (NULL)\n");
     
     return NULL;
 }
 
 char *get_callsite(int how_far_in_the_past) {
+    fprintf(stderr, "=> get_callsite %i\n", how_far_in_the_past);
+
     SEXP srcref = R_GetCurrentSrcref(how_far_in_the_past);
     const char *filename = get_filename(srcref);
     int lineno = get_lineno(srcref);
@@ -126,10 +151,14 @@ char *get_callsite(int how_far_in_the_past) {
         }
     }
 
+    fprintf(stderr, "<= get_callsite %i\n", how_far_in_the_past);
+
     return location;
 }
 
 char *get_location(SEXP op) {
+    fprintf(stderr, "=> get_location\n");
+
     SEXP srcref = getAttrib(op, R_SrcrefSymbol);
     const char *filename = get_filename(srcref);
     int lineno = get_lineno(srcref);
@@ -144,6 +173,8 @@ char *get_location(SEXP op) {
         }
     }
 
+    fprintf(stderr, "<= get_location\n");
+
     return location;
 }
 
@@ -152,6 +183,7 @@ const char *get_call(SEXP call) {
 }
 
 char *to_string(SEXP var) {
+    fprintf(stderr, "=> to_string\n");
     SEXP src = deparse1s(var);
     char *str = NULL;
 
@@ -161,16 +193,28 @@ char *to_string(SEXP var) {
         str = strdup("<unsupported>");
     }
 
+    fprintf(stderr, "<= to_string\n");
+
     return str;
 }
 
 int is_byte_compiled(SEXP op) {
+    fprintf(stderr, "=> is_byte_compiled\n");
     SEXP body = BODY(op);
-    return TYPEOF(body) == BCODESXP;
+    int b = TYPEOF(body) == BCODESXP;
+    fprintf(stderr, "<= is_byte_compiled\n");
+    return b;
 }
 
 const char *get_expression(SEXP e) {
-    return CHAR(STRING_ELT(deparse1line(e, FALSE), 0));
+    fprintf(stderr, "=> get_expression\n");
+
+    const char * expr = CHAR(STRING_ELT(deparse1line(e, FALSE), 0));
+
+    fprintf(stderr, "<= get_expression\n");
+
+    return expr;
+
 }
 
 // returns a monotonic timestamp in microseconds
@@ -193,6 +237,7 @@ uint64_t timestamp() {
 }
 
 SEXP get_named_list_element(const SEXP list, const char *name) {
+    fprintf(stderr, "=> get_named_list_element %s\n", name);
     if (TYPEOF(list) != VECSXP) {
         error("Not a list");
     }
@@ -207,10 +252,14 @@ SEXP get_named_list_element(const SEXP list, const char *name) {
         }
     }
 
+    fprintf(stderr, "<= get_named_list_element %s\n", name);
+
     return e;
 }
 
 void rdt_start(const rdt_handler *handler, const SEXP prom) {
+    fprintf(stderr, "=> rdt_start\n");
+
     if (handler == NULL) {
         REprintf("RDT: rdt_start() called with NULL handler\n");
         return;
@@ -223,9 +272,13 @@ void rdt_start(const rdt_handler *handler, const SEXP prom) {
     rdt_curr_handler = handler;
 
     RDT_HOOK(probe_begin, prom);
+
+    fprintf(stderr, "<= rdt_start\n");
 }
 
 void rdt_stop() {
+    fprintf(stderr, "=> rdt_stop\n");
+
     if (R_Verbose) {	
         REprintf("RDT: rdt_stop()\n");
     }
@@ -233,6 +286,8 @@ void rdt_stop() {
     RDT_HOOK(probe_end);
 
     rdt_curr_handler = &rdt_null_handler;
+
+    fprintf(stderr, "<= rdt_stop\n");
 }
 
 int rdt_is_running() {

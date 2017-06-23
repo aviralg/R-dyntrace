@@ -23,11 +23,17 @@ rdt_handler *setup_specialsxp_tracing(SEXP options);
 void cleanup_promises_tracing(/* rdt_handler *handler */ SEXP options);
 
 __attribute__((weak)) const char *get_string(SEXP sexp) {
+    fprintf(stderr, "=> get_string (rdt.h)\n");
+
     if (sexp == R_NilValue || TYPEOF(sexp) != STRSXP) {
         return NULL;
     }
 
-    return CHAR(STRING_ELT(sexp, 0));
+    const char *s = CHAR(STRING_ELT(sexp, 0));
+
+    fprintf(stderr, "<= get_string (rdt.h)\n");
+
+    return s;
 }
 
 #ifdef __cplusplus

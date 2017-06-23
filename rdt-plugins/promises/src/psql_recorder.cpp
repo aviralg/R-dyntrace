@@ -267,7 +267,6 @@ void psql_recorder_t::function_entry(const closure_info_t & info) {
     cerr << "=> function_entry( " << of_closure_info(info) << " )\n";
 
 #ifdef RDT_SQLITE_SUPPORT
-    bool align_statements = tracer_conf.pretty_print;
     bool need_to_insert = register_inserted_function(info.fn_id);
 
     if (need_to_insert) {
