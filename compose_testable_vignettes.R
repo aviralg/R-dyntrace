@@ -17,9 +17,9 @@ dir.create(log.dir, showWarnings = TRUE)
 rdt.cmd.head <- function(first, path)
   paste(
     "Rdt(tracer='promises',\n",
-    "output='d',\n", 
+    "output='f',\n", 
     "path='", path, "',\n", 
-    "format='psql',\n",
+    "format='sql',\n",
     "pretty.print=FALSE,\n",
     "overwrite=", first, ",\n", 
     "synthetic.call.id=TRUE,\n", 
@@ -90,7 +90,7 @@ instrument.and.aggregate.vignettes <- function(packages) {
     vignettes.in.package <- result.set$results[,3]
     
     instrumented.code.path <- paste(instrumented.code.dir, "/", i.packages, "_", package, ".R", sep="")
-    tracer.output.path <- paste(output.dir, "/", package, ".sqlite", sep="")
+    tracer.output.path <- paste(output.dir, "/", package, ".sql", sep="")
     
     i.vignettes = 0
     n.vignettes = length(vignettes.in.package)

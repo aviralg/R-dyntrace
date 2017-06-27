@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #CMD='bin/Rscript rdt-plugins/promises/R/benchmark.R'
-CMD='bin/R --slave --no-restore --debugger=gdb --file=compose_testable_vignettes.R --args'
+#CMD='bin/R --slave --no-restore --debugger=gdb --file=compose_testable_vignettes.R --args'
+CMD='bin/R --slave --no-restore --file=compose_testable_vignettes.R --args'
 
 PACKAGES=
 
@@ -20,6 +21,7 @@ for i in $PACKAGES
 do 
     echo "$CMD $i"
     #valgrind --tool=memcheck --leak-check=full --show-reachable=yes \
+    rr record \
     $CMD $i 2>&1 | tee "$i.log" 
     echo "$i" >> packages_done
 done   
