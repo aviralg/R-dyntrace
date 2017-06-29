@@ -170,7 +170,8 @@ int is_byte_compiled(SEXP op) {
 }
 
 const char *get_expression(SEXP e) {
-    return CHAR(STRING_ELT(deparse1line(e, FALSE), 0));
+    const char *result = CHAR(STRING_ELT(deparse1line(e, FALSE), 0));
+    return result;
 }
 
 // returns a monotonic timestamp in microseconds

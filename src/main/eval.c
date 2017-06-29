@@ -651,13 +651,17 @@ SEXP eval(SEXP e, SEXP rho)
 	    if (PRVALUE(tmp) == R_UnboundValue) {
 		/* not sure the PROTECT is needed here but keep it to
 		   be on the safe side. */
-		PROTECT(tmp);
+		
 
 		RDT_HOOK(probe_force_promise_entry, e, rho);
+
+		PROTECT(tmp);
 		tmp = forcePromise(tmp);
+		UNPROTECT(1);
+
 		RDT_HOOK(probe_force_promise_exit, e, rho, tmp);
 
-		UNPROTECT(1);
+
 	    }
 	    else {
 		tmp = PRVALUE(tmp);
@@ -714,7 +718,7 @@ SEXP eval(SEXP e, SEXP rho)
 	    PrintValue(e);
 	}
 	if (TYPEOF(op) == SPECIALSXP) {
-	    RDT_HOOK(probe_specialsxp_entry, e, op, rho);
+	    RDT_HOOK(probe_specialsxp_entry, e, op, rho); // op is protected
 
 	    int save = R_PPStackTop, flag = PRIMPRINT(op);
 	    const void *vmax = vmaxget();
@@ -735,10 +739,10 @@ SEXP eval(SEXP e, SEXP rho)
 	    check_stack_balance(op, save);
 	    vmaxset(vmax);
 
-	    RDT_HOOK(probe_specialsxp_exit, e, op, rho, tmp);
+	    RDT_HOOK(probe_specialsxp_exit, e, op, rho, tmp); // op is protected
 	}
 	else if (TYPEOF(op) == BUILTINSXP) {
-	    RDT_HOOK(probe_builtin_entry, e, op, rho);
+	    RDT_HOOK(probe_builtin_entry, e, op, rho);// op is protected
 
 	    int save = R_PPStackTop, flag = PRIMPRINT(op);
 	    const void *vmax = vmaxget();
@@ -769,7 +773,7 @@ SEXP eval(SEXP e, SEXP rho)
 	    check_stack_balance(op, save);
 	    vmaxset(vmax);
 
-	    RDT_HOOK(probe_builtin_exit, e, op, rho, tmp);
+	    RDT_HOOK(probe_builtin_exit, e, op, rho, tmp); // op is protected
 	}
 	else if (TYPEOF(op) == CLOSXP) {
 	    PROTECT(tmp = promiseArgs(CDR(e), rho));
@@ -1650,7 +1654,7 @@ static R_INLINE SEXP R_execClosure(SEXP call, SEXP newrho, SEXP sysparent,
     R_Srcref = cntxt.srcref;
     endcontext(&cntxt);
 
-    RDT_HOOK(probe_function_exit, call, op, newrho, cntxt.returnValue);
+    RDT_HOOK(probe_function_exit, call, op, newrho, cntxt.returnValue); // argslist is protected here, but i don't think it matters...? is nothing else?
 
     if (dbg) {
 	Rprintf("exiting from: ");
@@ -1672,9 +1676,9 @@ SEXP R_forceAndCall(SEXP e, int n, SEXP rho)
 	int flag = PRIMPRINT(fun);
 	PROTECT(e);
 	R_Visible = flag != 1;
-	RDT_HOOK(probe_specialsxp_entry, e, fun, rho);
+	RDT_HOOK(probe_specialsxp_entry, e, fun, rho); // fun is protected
 	tmp = PRIMFUN(fun) (e, fun, CDR(e), rho);
-	RDT_HOOK(probe_specialsxp_exit, e, fun, rho, tmp);
+	RDT_HOOK(probe_specialsxp_exit, e, fun, rho, tmp); // fun is protected
 	if (flag < 2) R_Visible = flag != 1;
 	UNPROTECT(1);
     }
@@ -1682,7 +1686,7 @@ SEXP R_forceAndCall(SEXP e, int n, SEXP rho)
 	int flag = PRIMPRINT(fun);
 	PROTECT(tmp = evalList(CDR(e), rho, e, 0));
 	if (flag < 2) R_Visible = flag != 1;
-	RDT_HOOK(probe_builtin_entry, e, fun, rho);
+	RDT_HOOK(probe_builtin_entry, e, fun, rho); // fun is protected
 	/* We used to insert a context only if profiling,
 	   but helps for tracebacks on .C etc. */
 	if (R_Profiling || (PPINFO(fun).kind == PP_FOREIGN)) {
@@ -1697,7 +1701,7 @@ SEXP R_forceAndCall(SEXP e, int n, SEXP rho)
 	} else {
 	    tmp = PRIMFUN(fun) (e, fun, tmp, rho);
 	}
-	RDT_HOOK(probe_builtin_exit, e, fun, rho, tmp);
+	RDT_HOOK(probe_builtin_exit, e, fun, rho, tmp);// fun is protected
 	if (flag < 2) R_Visible = flag != 1;
 	UNPROTECT(1);
     }
@@ -4907,7 +4911,7 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho,
 			value = FORCE_PROMISE(value, symbol, rho, keepmiss); \
 		    }							\
 		    else {						\
-		        RDT_HOOK(probe_promise_lookup, value, rho, pv)	\
+		        /*supicious!*/ RDT_HOOK(probe_promise_lookup, value, rho, pv)	\
 		        value = pv;					\
 		    }							\
 		}							\
