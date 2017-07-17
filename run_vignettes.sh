@@ -4,8 +4,6 @@
 #CMD='bin/R --slave --no-restore --debugger=gdb --file=compose_testable_vignettes.R --args'
 CMD='bin/R --slave --no-restore --file=compose_testable_vignettes.R --args'
 
->>>>>>> origin/sym-peering
-
 PACKAGES=
 
 if [ $# -ge 1 ]
@@ -23,7 +21,7 @@ for i in $PACKAGES
 do 
     echo "$CMD $i"
     #valgrind --tool=memcheck --leak-check=full --show-reachable=yes \
-    rr record \
+    #rr record \
     $CMD $i 2>&1 | tee "$i.log" 
     echo "$i" >> packages_done
 done   
