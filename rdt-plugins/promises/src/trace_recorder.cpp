@@ -101,6 +101,8 @@ string function_call_info_line(TraceLinePrefix prefix, const closure_info_t &inf
     }
     stream << "}\n";
 
+    stream << " recursive=" << recursive_type_to_string(info.recursion);
+
     return stream.str();
 }
 
@@ -149,6 +151,8 @@ string builtin_or_special_call_info_line(TraceLinePrefix prefix, const builtin_i
 
     stream << " compiled=" << (info.fn_compiled ? "true" : "false");
 
+    stream << " recursive=" << recursive_type_to_string(info.recursion);
+
     stream << "\n";
 
     return stream.str();
@@ -169,16 +173,14 @@ string unwind_info_line(TraceLinePrefix prefix, const call_id_t call_id, bool in
 string promise_creation_info_line(TraceLinePrefix prefix, const prom_basic_info_t & info, bool indent, bool as_sql_comment) {
     stringstream stream;
     prepend_prefix(stream, prefix, indent, as_sql_comment);
-    bool compiled = info.prom_type == sexp_type::BCODE;
-
     stream << "create promise id=" << info.prom_id
            << " type=" << sexp_type_to_string(info.prom_type);
 
-    if (info.prom_type == sexp_type::BCODE)
-        stream << "->" << sexp_type_to_string(info.prom_original_type);
-
-    if (info.symbol_underlying_type_is_set)
-        stream << "->" << sexp_type_to_string(info.symbol_underlying_type);
+//    if (info.prom_type == sexp_type::BCODE)
+//        stream << "->" << sexp_type_to_string(info.prom_original_type);
+//
+//    if (info.symbol_underlying_type_is_set)
+//        stream << "->" << sexp_type_to_string(info.symbol_underlying_type);
 
     stream << " full_type=" << full_sexp_type_to_string(info.full_type);
 
@@ -236,12 +238,6 @@ string promise_evaluation_info_line(TraceLinePrefix prefix, PromiseEvaluationEve
            << "/" << info.actual_distance_from_origin;
 
     stream << " type=" << sexp_type_to_string(info.prom_type);
-
-    if (info.prom_type == sexp_type::BCODE)
-        stream << "->" << sexp_type_to_string(info.prom_original_type);
-
-    if (info.symbol_underlying_type_is_set)
-        stream << "->" << sexp_type_to_string(info.symbol_underlying_type);
 
     stream << " full_type=" << full_sexp_type_to_string(info.full_type);
 

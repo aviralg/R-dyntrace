@@ -116,6 +116,13 @@ enum class function_type {
     TRUE_BUILTIN = 3
 };
 
+enum class recursion_type {
+    UNKNOWN = 0,
+    RECURSIVE = 1,
+    NOT_RECURSIVE = 2,
+    MUTUALLY_RECURSIVE = 3
+};
+
 enum class lifestyle_type {
     VIRGIN = 0,
     LOCAL = 1,
@@ -149,12 +156,16 @@ enum class sexp_type {
     EXTPTR = 22,
     WEAKREF = 23,
     RAW = 24,
-    S4 = 25
+    S4 = 25,
+
+    // I made these up:
+    OMEGA = 69
 };
 
 typedef vector<sexp_type> full_sexp_type;
 
-string sexp_type_to_string(sexp_type s);
+string sexp_type_to_string(sexp_type);
+SEXPTYPE sexp_type_to_SEXPTYPE(sexp_type);
 
 struct call_info_t {
     function_type fn_type;
@@ -169,6 +180,8 @@ struct call_info_t {
     call_id_t     call_id;
     env_addr_t    call_ptr;
     call_id_t     parent_call_id; // the id of the parent call that executed this call
+
+    recursion_type recursion;
 };
 
 struct closure_info_t : call_info_t {
@@ -182,10 +195,11 @@ struct builtin_info_t : call_info_t {
 struct prom_basic_info_t {
     prom_id_t         prom_id;
     sexp_type         prom_type;
-    sexp_type         prom_original_type; // if prom_type is BCODE, then this points what the BCODESXP was compiled from
-    sexp_type         symbol_underlying_type; // if prom_type or prom_original_type are SYM then this is the type of the
+    // I'm replacing these completely with full_sexp_type
+    //sexp_type         prom_original_type; // if prom_type is BCODE, then this points what the BCODESXP was compiled from
+    //sexp_type         symbol_underlying_type; // if prom_type or prom_original_type are SYM then this is the type of the
                                               // expression the SYM points to.
-    bool              symbol_underlying_type_is_set;
+    //bool              symbol_underlying_type_is_set;
     full_sexp_type    full_type;
 };
 
@@ -217,5 +231,7 @@ arglist_t get_arguments(call_id_t call_id, SEXP op, SEXP rho);
 
 string full_sexp_type_to_string(full_sexp_type);
 string full_sexp_type_to_number_string(full_sexp_type);
+
+string recursive_type_to_string(recursion_type);
 
 #endif //R_3_3_1_TRACER_SEXPINFO_H
