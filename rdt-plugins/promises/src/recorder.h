@@ -11,6 +11,7 @@
 
 //#include <Defn.h> // We need this for R_Funtab
 #include <rdt.h>
+#include <set>
 #include "tracer_sexpinfo.h"
 #include "tracer_state.h"
 
@@ -38,7 +39,7 @@ public:
 
 
         call_stack_elem_t elem = STATE(fun_stack).back();
-        info.parent_call_id = elem.first;
+        info.parent_call_id = get<0>(elem);
 
         char *location = get_location(op);
         if (location != NULL)
@@ -60,6 +61,8 @@ public:
         info.arguments = get_arguments(info.call_id, op, rho);
         info.fn_definition = get_expression(op);
 
+        info.recursion = is_recursive(info.fn_id);
+
         return info;
     }
 
@@ -73,7 +76,7 @@ public:
         info.fn_id = get_function_id(op);
         info.fn_addr = get_function_addr(op);
         call_stack_elem_t elem = STATE(fun_stack).back();
-        info.call_id = elem.first;
+        info.call_id = get<0>(elem);
         info.fn_type = function_type::CLOSURE;
 
         char *location = get_location(op);
@@ -98,7 +101,9 @@ public:
 
         STATE(fun_stack).pop_back();
         call_stack_elem_t elem_parent = STATE(fun_stack).back();
-        info.parent_call_id = elem_parent.first;
+        info.parent_call_id = get<0>(elem_parent);
+
+        info.recursion = is_recursive(info.fn_id);
 
         return info;
     }
@@ -119,7 +124,7 @@ public:
         //R_FunTab[PRIMOFFSET(op)].eval % 100 )/10 ==
 
         call_stack_elem_t elem = STATE(fun_stack).back();
-        info.parent_call_id = elem.first;
+        info.parent_call_id = get<0>(elem);
 
         char *location = get_location(op);
         if (location != NULL) {
@@ -141,6 +146,7 @@ public:
         // it will be unique because real pointers are aligned (no odd addresses)
         // info.call_id = make_funcall_id(rho) | 1;
 
+        info.recursion = is_recursive(info.fn_id);
 
         return info;
     }
@@ -154,7 +160,7 @@ public:
         info.fn_id = get_function_id(op);
         info.fn_addr = get_function_addr(op);
         call_stack_elem_t elem = STATE(fun_stack).back();
-        info.call_id = elem.first;
+        info.call_id = get<0>(elem);
         if (name != NULL)
             info.name = name;
         info.fn_type = fn_type;
@@ -162,7 +168,8 @@ public:
         info.fn_definition = get_expression(op);
 
         call_stack_elem_t parent_elem = STATE(fun_stack).back();
-        info.parent_call_id = parent_elem.first;
+        info.parent_call_id = get<0>(parent_elem);
+        info.recursion = is_recursive(info.fn_id);
 
         char *location = get_location(op);
         if (location != NULL)
@@ -178,12 +185,35 @@ public:
     }
 
 private:
+    recursion_type is_recursive(fn_id_t function) {
+        for (vector<call_stack_elem_t>::reverse_iterator i = STATE(fun_stack).rbegin(); i != STATE(fun_stack).rend(); ++i) {
+            call_id_t cursor_call = get<0>(*i);
+            fn_id_t cursor_function = get<1>(*i);
+            function_type cursor_type = get<2>(*i);
+
+            if (cursor_call == 0) {
+                // end of stack
+                return recursion_type::UNKNOWN;
+            }
+
+            if (cursor_function == function) {
+                return recursion_type::RECURSIVE;
+            }
+
+            if (cursor_type == function_type::BUILTIN || cursor_type == function_type::CLOSURE) {
+                return recursion_type::NOT_RECURSIVE;
+            }
+
+            // inside a different function, but one that doesn't matter, recursion still possible
+        }
+    }
+
     tuple<lifestyle_type, int, int> judge_promise_lifestyle(call_id_t from_call_id) {
         int effective_distance = 0;
         int actual_distance = 0;
         for (vector<call_stack_elem_t>::reverse_iterator i = STATE(fun_stack).rbegin(); i != STATE(fun_stack).rend(); ++i) {
-            call_id_t cursor = i->first;
-            function_type type = i->second;
+            call_id_t cursor = get<0>(*i);
+            function_type type = get<2>(*i);
 
             if (cursor == from_call_id)
                 if (effective_distance == 0) {
@@ -211,6 +241,65 @@ private:
         }
     }
 
+    void get_full_type(SEXP sexp, SEXP rho, full_sexp_type & result, set<SEXP> & visited) {
+        sexp_type type = static_cast<sexp_type>(TYPEOF(sexp));
+        result.push_back(type);
+
+        if (visited.find(sexp) != visited.end()) {
+            result.push_back(sexp_type::OMEGA);
+            return;
+        } else {
+            visited.insert(sexp);
+        }
+
+        if (type == sexp_type::PROM) {
+            SEXP sexp_inside_promise = PRCODE(sexp);
+
+            PROTECT(sexp_inside_promise);
+            get_full_type(sexp_inside_promise, rho, result, visited);
+            UNPROTECT(1);
+
+            return;
+        }
+
+        // Question... are all BCODEs functions?
+        if (type == sexp_type::BCODE) {
+//            bool try_to_attach_symbol_value = (rho != R_NilValue) ? isEnvironment(rho) : false;
+//            if (!try_to_attach_symbol_value) return;
+//
+//            SEXP uncompiled_sexp = BODY_EXPR(sexp);
+//            SEXP underlying_expression = findVar(PRCODE(uncompiled_sexp), rho);
+//
+//            if (underlying_expression == R_UnboundValue) return;
+//            if (underlying_expression == R_MissingArg) return;
+//
+//            PROTECT(underlying_expression);
+//            //get_full_type(underlying_expression, rho, result, visited);
+//            UNPROTECT(1);
+
+            //Rprintf("hi from dbg\n`");
+            return;
+
+        }
+
+        if (type == sexp_type::SYM) {
+            bool try_to_attach_symbol_value = (rho != R_NilValue) ? isEnvironment(rho) : false;
+            if (!try_to_attach_symbol_value) return;
+
+            SEXP symbol_points_to = findVar(sexp, rho);
+
+            if (symbol_points_to == R_UnboundValue) return;
+            if (symbol_points_to == R_MissingArg) return;
+            if (TYPEOF(symbol_points_to) == SYMSXP) return;
+
+            PROTECT(symbol_points_to);
+            get_full_type(symbol_points_to, rho, result, visited);
+            UNPROTECT(1);
+
+            return;
+        }
+    }
+
     prom_basic_info_t promise_get_basic_info(const SEXP prom, const SEXP rho) {
         prom_basic_info_t info;
 
@@ -219,38 +308,8 @@ private:
 
         info.prom_type = static_cast<sexp_type>(TYPEOF(PRCODE(prom)));
 
-        if (info.prom_type == sexp_type::BCODE) {
-            SEXP original_expression = BODY_EXPR(PRCODE(prom));
-            info.prom_original_type = static_cast<sexp_type>(TYPEOF(PRCODE(original_expression)));
-        } else {
-            info.prom_original_type = info.prom_type;
-        }
-
-        bool try_to_attach_symbol_value = (rho != R_NilValue) ? isEnvironment(rho) : false;
-        if (try_to_attach_symbol_value) {
-            if (info.prom_type == sexp_type::SYM) {
-                SEXP underlying_expression = findVar(PRCODE(prom), rho);
-                if (underlying_expression != R_UnboundValue) {
-                    info.symbol_underlying_type = static_cast<sexp_type>(TYPEOF(underlying_expression));
-                    info.symbol_underlying_type_is_set = true;
-                } else {
-                    info.symbol_underlying_type_is_set = false;
-                }
-            } else if (info.prom_type == sexp_type::BCODE && info.prom_original_type == sexp_type::SYM) {
-                SEXP original_expression = BODY_EXPR(PRCODE(prom));
-                SEXP underlying_expression = findVar(PRCODE(original_expression), rho);
-                if (underlying_expression != R_UnboundValue) {
-                    info.symbol_underlying_type = static_cast<sexp_type>(TYPEOF(underlying_expression));
-                    info.symbol_underlying_type_is_set = true;
-                } else {
-                    info.symbol_underlying_type_is_set = false;
-                }
-            } else {
-                info.symbol_underlying_type_is_set = false;
-            }
-        } else {
-            info.symbol_underlying_type_is_set = false;
-        }
+        set<SEXP> visited;
+        get_full_type(PRCODE(prom), rho, info.full_type, visited);
 
         return info;
     }
@@ -266,7 +325,7 @@ private:
         info.prom_id = get_promise_id(promise_expression);
 
         call_stack_elem_t stack_elem = STATE(fun_stack).back();
-        info.in_call_id = stack_elem.first;
+        info.in_call_id = get<0>(stack_elem);
 
         info.from_call_id = STATE(promise_origin)[info.prom_id];
 
@@ -283,21 +342,8 @@ private:
 
         info.prom_type = static_cast<sexp_type>(TYPEOF(PRCODE(promise_expression)));
 
-        if (info.prom_type == sexp_type::BCODE) {
-            SEXP original_expression = BODY_EXPR(PRCODE(promise_expression));
-            info.prom_original_type = static_cast<sexp_type>(TYPEOF(PRCODE(original_expression)));
-        } else {
-            info.prom_original_type = info.prom_type;
-        }
-
-        if (info.prom_type == sexp_type::SYM) {
-            SEXP underlying_expression = findVar(PRCODE(promise_expression), rho);
-            info.symbol_underlying_type = static_cast<sexp_type>(TYPEOF(underlying_expression));
-        } else if (info.prom_type == sexp_type::BCODE && info.prom_original_type == sexp_type::SYM) {
-            SEXP original_expression = BODY_EXPR(PRCODE(promise_expression));
-            SEXP underlying_expression = findVar(PRCODE(original_expression), rho);
-            info.symbol_underlying_type = static_cast<sexp_type>(TYPEOF(underlying_expression));
-        }
+        set<SEXP> visited;
+        get_full_type(PRCODE(promise_expression), rho, info.full_type, visited);
 
         return info;
     }
