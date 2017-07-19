@@ -4867,6 +4867,40 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho,
     return value;
 }
 
+static R_INLINE SEXP getvar_enclos(SEXP symbol, SEXP rho_actual,
+							Rboolean dd, Rboolean keepmiss,
+							R_binding_cache_t vcache, int sidx)
+{
+	SEXP rho = ENCLOS(rho_actual);
+
+	SEXP value;
+	if (dd)
+		value = ddfindVar(symbol, rho);
+	else if (vcache != NULL) {
+		SEXP cell = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
+		value = BINDING_VALUE(cell);
+		if (value == R_UnboundValue)
+			value = FIND_VAR_NO_CACHE(symbol, rho, cell);
+	}
+	else
+		value = findVar(symbol, rho);
+
+	if (value == R_UnboundValue)
+		UNBOUND_VARIABLE_ERROR(symbol);
+	else if (value == R_MissingArg)
+		MAYBE_MISSING_ARGUMENT_ERROR(symbol, keepmiss);
+	else if (TYPEOF(value) == PROMSXP) {
+		PROTECT(value);
+
+		// Tracing: we handled this and we handle this.
+		value = FORCE_PROMISE(value, symbol, rho_actual, keepmiss);
+
+		UNPROTECT(1);
+	} else if (NAMED(value) == 0 && value != R_NilValue)
+		SET_NAMED(value, 1);
+	return value;
+}
+
 #define INLINE_GETVAR
 #ifdef INLINE_GETVAR
 /* Try to handle the most common case as efficiently as possible.  If
@@ -6298,7 +6332,55 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
     OP(LDNULL, 0): R_Visible = TRUE; BCNPUSH(R_NilValue); NEXT();
     OP(LDTRUE, 0): R_Visible = TRUE; BCNPUSH(R_TrueValue); NEXT();
     OP(LDFALSE, 0): R_Visible = TRUE; BCNPUSH(R_FalseValue); NEXT();
-    OP(GETVAR, 1): DO_GETVAR(FALSE, FALSE);
+    OP(GETVAR, 1): //DO_GETVAR(FALSE, FALSE);
+		//#define DO_GETVAR(dd,keepmiss)
+		do {
+			int sidx = GETOP();
+			if (!FALSE && smallcache) {
+			SEXP cell = GET_SMALLCACHE_BINDING_CELL(vcache, sidx);
+			/* try fast handling of REALSXP, INTSXP, LGLSXP */
+			/* (cell won't be R_NilValue or an active binding) */
+			SEXP value = CAR(cell);
+			int type = TYPEOF(value);
+			switch(type) {
+			case REALSXP:
+			case INTSXP:
+			case LGLSXP:
+				/* may be ok to skip this test: */
+				if (NAMED(value) == 0)
+				SET_NAMED(value, 1);
+				R_Visible = TRUE;
+				BCNPUSH(value);
+				NEXT();
+			}
+			if (cell != R_NilValue && ! IS_ACTIVE_BINDING(cell)) {
+				value = CAR(cell);
+				if (TYPEOF(value) != SYMSXP) {
+				if (TYPEOF(value) == PROMSXP) {
+					SEXP pv = PRVALUE(value);
+					if (pv == R_UnboundValue) {
+					SEXP symbol = VECTOR_ELT(constants, sidx);
+								/* Tracing: we didn't handle this and we handle this. */
+					value = FORCE_PROMISE(value, symbol, rho, FALSE);
+					}
+					else {
+						RDT_HOOK(probe_promise_lookup, value, rho, pv)
+						value = pv;
+					}
+				}
+				else if (NAMED(value) == 0)
+					SET_NAMED(value, 1);
+				R_Visible = TRUE;
+				BCNPUSH(value);
+				NEXT();
+				}
+			}
+			}
+			SEXP symbol = VECTOR_ELT(constants, sidx);
+			R_Visible = TRUE;
+			BCNPUSH(getvar(symbol, rho, FALSE, FALSE, vcache, sidx));
+			NEXT();
+		} while (0);
     OP(DDVAL, 1): DO_GETVAR(TRUE, FALSE);
     OP(SETVAR, 1):
       {
@@ -6806,7 +6888,7 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
       {
 	SEXP symbol = VECTOR_ELT(constants, GETOP());
 	SEXP value = GETSTACK(-1);
-	BCNPUSH(getvar(symbol, ENCLOS(rho), FALSE, FALSE, NULL, 0));
+	BCNPUSH(getvar_enclos(symbol, rho, FALSE, FALSE, NULL, 0));
 	BCNPUSH(value);
 	/* top three stack entries are now RHS value, LHS value, RHS value */
 	FIXUP_RHS_NAMED(value);

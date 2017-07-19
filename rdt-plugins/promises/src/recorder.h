@@ -61,7 +61,7 @@ public:
         info.arguments = get_arguments(info.call_id, op, rho);
         info.fn_definition = get_expression(op);
 
-        info.recursion = is_recursive(info.fn_id);
+//        info.recursion = is_recursive(info.fn_id);
 
         return info;
     }
@@ -103,7 +103,7 @@ public:
         call_stack_elem_t elem_parent = STATE(fun_stack).back();
         info.parent_call_id = get<0>(elem_parent);
 
-        info.recursion = is_recursive(info.fn_id);
+//        info.recursion = is_recursive(info.fn_id);
 
         return info;
     }
@@ -111,12 +111,12 @@ public:
     builtin_info_t builtin_entry_get_info(const SEXP call, const SEXP op, const SEXP rho, function_type fn_type) {
         builtin_info_t info;
 
-        const char *name = get_name(call);
+        const char *name = get_name(call); // op?????
         if (name != NULL)
             info.name = name;
         info.fn_id = get_function_id(op);
         info.fn_addr = get_function_addr(op);
-        info.name = info.name;
+
         info.fn_type = fn_type;
         info.fn_compiled = is_byte_compiled(op);
         info.fn_definition = get_expression(op);
@@ -146,7 +146,7 @@ public:
         // it will be unique because real pointers are aligned (no odd addresses)
         // info.call_id = make_funcall_id(rho) | 1;
 
-        info.recursion = is_recursive(info.fn_id);
+//        info.recursion = is_recursive(info.fn_id);
 
         return info;
     }
@@ -154,22 +154,21 @@ public:
     builtin_info_t builtin_exit_get_info(const SEXP call, const SEXP op, const SEXP rho, function_type fn_type) {
         builtin_info_t info;
 
-        const char *name = get_name(call);
+        const char *name = get_name(call); // op??????
         if (name != NULL)
             info.name = name;
         info.fn_id = get_function_id(op);
         info.fn_addr = get_function_addr(op);
         call_stack_elem_t elem = STATE(fun_stack).back();
         info.call_id = get<0>(elem);
-        if (name != NULL)
-            info.name = name;
+
         info.fn_type = fn_type;
         info.fn_compiled = is_byte_compiled(op);
         info.fn_definition = get_expression(op);
 
         call_stack_elem_t parent_elem = STATE(fun_stack).back();
         info.parent_call_id = get<0>(parent_elem);
-        info.recursion = is_recursive(info.fn_id);
+//        info.recursion = is_recursive(info.fn_id);
 
         char *location = get_location(op);
         if (location != NULL)
@@ -283,18 +282,18 @@ private:
         }
 
         if (type == sexp_type::SYM) {
-            bool try_to_attach_symbol_value = (rho != R_NilValue) ? isEnvironment(rho) : false;
-            if (!try_to_attach_symbol_value) return;
+//            bool try_to_attach_symbol_value = (rho != R_NilValue) ? isEnvironment(rho) : false;
+//            if (!try_to_attach_symbol_value) return;
+//
+//            SEXP symbol_points_to = findVar(sexp, rho);
+//
+//            if (symbol_points_to == R_UnboundValue) return;
+//            if (symbol_points_to == R_MissingArg) return;
+//            if (TYPEOF(symbol_points_to) == SYMSXP) return;
 
-            SEXP symbol_points_to = findVar(sexp, rho);
-
-            if (symbol_points_to == R_UnboundValue) return;
-            if (symbol_points_to == R_MissingArg) return;
-            if (TYPEOF(symbol_points_to) == SYMSXP) return;
-
-            PROTECT(symbol_points_to);
-            get_full_type(symbol_points_to, rho, result, visited);
-            UNPROTECT(1);
+//            PROTECT(symbol_points_to);
+//            get_full_type(symbol_points_to, rho, result, visited);
+//            UNPROTECT(1);
 
             return;
         }
@@ -342,6 +341,7 @@ private:
 
         info.prom_type = static_cast<sexp_type>(TYPEOF(PRCODE(promise_expression)));
 
+        // FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         set<SEXP> visited;
         get_full_type(PRCODE(promise_expression), rho, info.full_type, visited);
 

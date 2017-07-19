@@ -247,135 +247,135 @@ string promise_evaluation_info_line(TraceLinePrefix prefix, PromiseEvaluationEve
 }
 
 void trace_recorder_t::function_entry(const closure_info_t & info) {
-    string statement = function_call_info_line(
-            TraceLinePrefix::ENTER,
-            info,
-            /*indent=*/tracer_conf.pretty_print,
-            /*as_sql_comment=*/render_as_sql_comment,
-            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
-
-    multiplexer::output(
-            multiplexer::payload_t(statement),
-            tracer_conf.outputs);
-
-    if (tracer_conf.pretty_print) {
-        STATE(indent) += tracer_conf.indent_width;
-        STATE(curr_fn_indent_level).push(STATE(indent));
-    }
+//    string statement = function_call_info_line(
+//            TraceLinePrefix::ENTER,
+//            info,
+//            /*indent=*/tracer_conf.pretty_print,
+//            /*as_sql_comment=*/render_as_sql_comment,
+//            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
+//
+//    multiplexer::output(
+//            multiplexer::payload_t(statement),
+//            tracer_conf.outputs);
+//
+//    if (tracer_conf.pretty_print) {
+//        STATE(indent) += tracer_conf.indent_width;
+//        STATE(curr_fn_indent_level).push(STATE(indent));
+//    }
 }
 
 void trace_recorder_t::function_exit(const closure_info_t & info) {
-    if (tracer_conf.pretty_print) {
-        STATE(indent) -= tracer_conf.indent_width;
-        STATE(curr_fn_indent_level).pop();
-    }
-
-    string statement = function_call_info_line(
-            TraceLinePrefix::EXIT,
-            info,
-            tracer_conf.pretty_print,
-            /*as_sql_comment=*/render_as_sql_comment,
-            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
-
-    multiplexer::output(
-            multiplexer::payload_t(statement),
-            tracer_conf.outputs);
+//    if (tracer_conf.pretty_print) {
+//        STATE(indent) -= tracer_conf.indent_width;
+//        STATE(curr_fn_indent_level).pop();
+//    }
+//
+//    string statement = function_call_info_line(
+//            TraceLinePrefix::EXIT,
+//            info,
+//            tracer_conf.pretty_print,
+//            /*as_sql_comment=*/render_as_sql_comment,
+//            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
+//
+//    multiplexer::output(
+//            multiplexer::payload_t(statement),
+//            tracer_conf.outputs);
 }
 
 void trace_recorder_t::builtin_entry(const builtin_info_t & info) {
-    string statement = builtin_or_special_call_info_line(
-            TraceLinePrefix::ENTER,
-            info,
-            tracer_conf.pretty_print,
-            /*as_sql_comment=*/render_as_sql_comment,
-            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
-
-    multiplexer::output(
-            multiplexer::payload_t(statement),
-            tracer_conf.outputs);
-
-    if (tracer_conf.pretty_print) {
-        STATE(indent) += tracer_conf.indent_width;
-        STATE(curr_fn_indent_level).push(STATE(indent));
-    }
+//    string statement = builtin_or_special_call_info_line(
+//            TraceLinePrefix::ENTER,
+//            info,
+//            tracer_conf.pretty_print,
+//            /*as_sql_comment=*/render_as_sql_comment,
+//            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
+//
+//    multiplexer::output(
+//            multiplexer::payload_t(statement),
+//            tracer_conf.outputs);
+//
+//    if (tracer_conf.pretty_print) {
+//        STATE(indent) += tracer_conf.indent_width;
+//        STATE(curr_fn_indent_level).push(STATE(indent));
+//    }
 }
 
 void trace_recorder_t::builtin_exit(const builtin_info_t & info) {
-    if (tracer_conf.pretty_print) {
-        STATE(indent) -= tracer_conf.indent_width;
-        STATE(curr_fn_indent_level).pop();
-    }
-
-    string statement = builtin_or_special_call_info_line(
-            TraceLinePrefix::EXIT,
-            info,
-            tracer_conf.pretty_print,
-            /*as_sql_comment=*/render_as_sql_comment,
-            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
-
-    multiplexer::output(
-            multiplexer::payload_t(statement),
-            tracer_conf.outputs);
+//    if (tracer_conf.pretty_print) {
+//        STATE(indent) -= tracer_conf.indent_width;
+//        STATE(curr_fn_indent_level).pop();
+//    }
+//
+//    string statement = builtin_or_special_call_info_line(
+//            TraceLinePrefix::EXIT,
+//            info,
+//            tracer_conf.pretty_print,
+//            /*as_sql_comment=*/render_as_sql_comment,
+//            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
+//
+//    multiplexer::output(
+//            multiplexer::payload_t(statement),
+//            tracer_conf.outputs);
 }
 
 void trace_recorder_t::promise_created(const prom_basic_info_t & info) {
-    string statement = promise_creation_info_line(
-            TraceLinePrefix::ENTER_AND_EXIT,
-            info,
-            tracer_conf.pretty_print,
-            /*as_sql_comment=*/render_as_sql_comment);
-
-    multiplexer::output(
-            multiplexer::payload_t(statement),
-            tracer_conf.outputs);
+//    string statement = promise_creation_info_line(
+//            TraceLinePrefix::ENTER_AND_EXIT,
+//            info,
+//            tracer_conf.pretty_print,
+//            /*as_sql_comment=*/render_as_sql_comment);
+//
+//    multiplexer::output(
+//            multiplexer::payload_t(statement),
+//            tracer_conf.outputs);
 }
 
 void trace_recorder_t::force_promise_entry(const prom_info_t & info) {
-    string statement = promise_evaluation_info_line(
-            TraceLinePrefix::ENTER,
-            PromiseEvaluationEvent::FORCE,
-            info,
-            tracer_conf.pretty_print,
-            /*as_sql_comment=*/render_as_sql_comment,
-            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
-
-    multiplexer::output(
-            multiplexer::payload_t(statement),
-            tracer_conf.outputs);
-
-    if (tracer_conf.pretty_print)
-        STATE(indent) += tracer_conf.indent_width;
+//    string statement = promise_evaluation_info_line(
+//            TraceLinePrefix::ENTER,
+//            PromiseEvaluationEvent::FORCE,
+//            info,
+//            tracer_conf.pretty_print,
+//            /*as_sql_comment=*/render_as_sql_comment,
+//            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
+//
+//    multiplexer::output(
+//            multiplexer::payload_t(statement),
+//            tracer_conf.outputs);
+//
+//    if (tracer_conf.pretty_print)
+//        STATE(indent) += tracer_conf.indent_width;
 }
 
 void trace_recorder_t::force_promise_exit(const prom_info_t & info) {
-    if (tracer_conf.pretty_print)
-        STATE(indent) -= tracer_conf.indent_width;
-
-    string statement = promise_evaluation_info_line(
-            TraceLinePrefix::EXIT,
-            PromiseEvaluationEvent::FORCE,
-            info,
-            tracer_conf.pretty_print,
-            /*as_sql_comment=*/render_as_sql_comment,
-            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
-
-    multiplexer::output(
-            multiplexer::payload_t(statement),
-            tracer_conf.outputs);
+//    if (tracer_conf.pretty_print)
+//        STATE(indent) -= tracer_conf.indent_width;
+//
+//    string statement = promise_evaluation_info_line(
+//            TraceLinePrefix::EXIT,
+//            PromiseEvaluationEvent::FORCE,
+//            info,
+//            tracer_conf.pretty_print,
+//            /*as_sql_comment=*/render_as_sql_comment,
+//            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
+//
+//    multiplexer::output(
+//            multiplexer::payload_t(statement),
+//            tracer_conf.outputs);
 }
 
 void trace_recorder_t::promise_lookup(const prom_info_t & info) {
-    string statement = promise_evaluation_info_line(
-            TraceLinePrefix::ENTER_AND_EXIT,
-            PromiseEvaluationEvent::LOOKUP,
-            info,
-            tracer_conf.pretty_print,
-            /*as_sql_comment=*/render_as_sql_comment,
-            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
-
-    multiplexer::output(
-            multiplexer::payload_t(statement),
-            tracer_conf.outputs);
+//    string statement = promise_evaluation_info_line(
+//            TraceLinePrefix::ENTER_AND_EXIT,
+//            PromiseEvaluationEvent::LOOKUP,
+//            info,
+//            tracer_conf.pretty_print,
+//            /*as_sql_comment=*/render_as_sql_comment,
+//            /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
+//
+//    multiplexer::output(
+//            multiplexer::payload_t(statement),
+//            tracer_conf.outputs);
 }
 
 void trace_recorder_t::init_recorder() {
@@ -383,35 +383,35 @@ void trace_recorder_t::init_recorder() {
 }
 
 void trace_recorder_t::start_trace() {
-    multiplexer::init(tracer_conf.outputs, tracer_conf.filename, tracer_conf.overwrite);
+//    multiplexer::init(tracer_conf.outputs, tracer_conf.filename, tracer_conf.overwrite);
 }
 
 void trace_recorder_t::finish_trace() {
-    multiplexer::close(tracer_conf.outputs);
+//    multiplexer::close(tracer_conf.outputs);
 }
 
 void trace_recorder_t::unwind(const vector<call_id_t> & unwound_calls) {
-    stringstream statement;
-
-    for (call_id_t call_id : unwound_calls) {
-        if (tracer_conf.pretty_print) {
-            STATE(indent) = STATE(curr_fn_indent_level).top();
-            STATE(curr_fn_indent_level).pop();
-            STATE(indent) -= tracer_conf.indent_width;
-        }
-
-        statement << unwind_info_line(
-                TraceLinePrefix::EXIT,
-                call_id,
-                tracer_conf.pretty_print,
-                /*as_sql_comment=*/render_as_sql_comment,
-                /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
-    }
-
-    string s = statement.str();
-    multiplexer::output(
-            multiplexer::payload_t(s),
-            tracer_conf.outputs);
+//    stringstream statement;
+//
+//    for (call_id_t call_id : unwound_calls) {
+//        if (tracer_conf.pretty_print) {
+//            STATE(indent) = STATE(curr_fn_indent_level).top();
+//            STATE(curr_fn_indent_level).pop();
+//            STATE(indent) -= tracer_conf.indent_width;
+//        }
+//
+//        statement << unwind_info_line(
+//                TraceLinePrefix::EXIT,
+//                call_id,
+//                tracer_conf.pretty_print,
+//                /*as_sql_comment=*/render_as_sql_comment,
+//                /*call_id_as_pointer=*/tracer_conf.call_id_use_ptr_fmt);
+//    }
+//
+//    string s = statement.str();
+//    multiplexer::output(
+//            multiplexer::payload_t(s),
+//            tracer_conf.outputs);
 }
 
 // TODO rename all `statement`s to something more suitable.

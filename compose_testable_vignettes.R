@@ -17,9 +17,9 @@ dir.create(log.dir, showWarnings = TRUE)
 rdt.cmd.head <- function(first, path)
   paste(
     "Rdt(tracer='promises',\n",
-    "output='d',\n", 
+    "output='f',\n", 
     "path='", path, "',\n", 
-    "format='psql',\n",
+    "format='trace',\n",
     "pretty.print=FALSE,\n",
     "overwrite=", first, ",\n", 
     "synthetic.call.id=TRUE,\n", 
