@@ -282,18 +282,18 @@ private:
         }
 
         if (type == sexp_type::SYM) {
-//            bool try_to_attach_symbol_value = (rho != R_NilValue) ? isEnvironment(rho) : false;
-//            if (!try_to_attach_symbol_value) return;
-//
-//            SEXP symbol_points_to = findVar(sexp, rho);
-//
-//            if (symbol_points_to == R_UnboundValue) return;
-//            if (symbol_points_to == R_MissingArg) return;
-//            if (TYPEOF(symbol_points_to) == SYMSXP) return;
+            bool try_to_attach_symbol_value = (rho != R_NilValue) ? isEnvironment(rho) : false;
+            if (!try_to_attach_symbol_value) return;
 
-//            PROTECT(symbol_points_to);
-//            get_full_type(symbol_points_to, rho, result, visited);
-//            UNPROTECT(1);
+            SEXP symbol_points_to = findVar(sexp, rho);
+
+            if (symbol_points_to == R_UnboundValue) return;
+            if (symbol_points_to == R_MissingArg) return;
+            if (TYPEOF(symbol_points_to) == SYMSXP) return;
+
+            PROTECT(symbol_points_to);
+            get_full_type(symbol_points_to, rho, result, visited);
+            UNPROTECT(1);
 
             return;
         }

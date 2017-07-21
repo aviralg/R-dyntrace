@@ -653,9 +653,9 @@ SEXP eval(SEXP e, SEXP rho)
 		   be on the safe side. */
 		PROTECT(tmp);
 
-		RDT_HOOK(probe_force_promise_entry, e, rho);
+//		RDT_HOOK(probe_force_promise_entry, e, rho); // OK???
 		tmp = forcePromise(tmp);
-		RDT_HOOK(probe_force_promise_exit, e, rho, tmp);
+//		RDT_HOOK(probe_force_promise_exit, e, rho, tmp);
 
 		UNPROTECT(1);
 	    }
@@ -673,9 +673,9 @@ SEXP eval(SEXP e, SEXP rho)
 	    /* We could just unconditionally use the return value from
 	       forcePromise; the test avoids the function call if the
 	       promise is already evaluated. */
-		RDT_HOOK(probe_force_promise_entry, e, rho);
+//		RDT_HOOK(probe_force_promise_entry, e, rho); // OK
 		forcePromise(e);
-		RDT_HOOK(probe_force_promise_exit, e, rho, PRVALUE(e));
+//		RDT_HOOK(probe_force_promise_exit, e, rho, PRVALUE(e));
 	}
 	else {
 		RDT_HOOK(probe_promise_lookup, e, rho, PRVALUE(e));
@@ -2265,15 +2265,15 @@ SEXP attribute_hidden do_function(SEXP call, SEXP op, SEXP args, SEXP rho)
     // Tracing: we now handle this. Not sure how to trigger it though.
         int not_forced = PRVALUE(op) == R_UnboundValue;
         if (not_forced) {
-            RDT_HOOK(probe_force_promise_entry, op, rho);
+//            RDT_HOOK(probe_force_promise_entry, op, rho);
         }
         SEXP op_saved = op;
         op = forcePromise(op);
         if (not_forced) {
-            RDT_HOOK(probe_force_promise_exit, op_saved, rho, op);
+//            RDT_HOOK(probe_force_promise_exit, op_saved, rho, op); // OK
         }
         else {
-            RDT_HOOK(probe_promise_lookup, op_saved, rho, op);
+//            RDT_HOOK(probe_promise_lookup, op_saved, rho, op);
         }
 
         SET_NAMED(op, 2);
@@ -4010,11 +4010,11 @@ static R_INLINE SEXP getPrimitive(SEXP symbol, SEXPTYPE type, SEXP rho)
     // Tracing: we dont't handle this. Not sure why not. This can potentially happen a lot, actually.
         int not_forced = PRVALUE(value) == R_UnboundValue;
         if (not_forced) {
-            RDT_HOOK(probe_force_promise_entry, symbol, rho);
+//            RDT_HOOK(probe_force_promise_entry, symbol, rho); //OK
         }
         value = forcePromise(value);
         if (not_forced) {
-            RDT_HOOK(probe_force_promise_exit, symbol, rho, value);
+//            RDT_HOOK(probe_force_promise_exit, symbol, rho, value);
         }
         else {
             RDT_HOOK(probe_promise_lookup, symbol, rho, value);
@@ -4078,11 +4078,11 @@ static SEXP cmp_arith2(SEXP call, int opval, SEXP opsym, SEXP x, SEXP y,
         // Tracing: we didn't handle this. Not sure why not.
         int not_forced = PRVALUE(op) == R_UnboundValue;
         if (not_forced) {
-            RDT_HOOK(probe_force_promise_entry, opsym, rho);
+//            RDT_HOOK(probe_force_promise_entry, opsym, rho); // OK
         }
         op = forcePromise(op);
         if (not_forced) {
-            RDT_HOOK(probe_force_promise_exit, opsym, rho, op);
+//            RDT_HOOK(probe_force_promise_exit, opsym, rho, op);
         }
         else {
             RDT_HOOK(probe_promise_lookup, opsym, rho, op);
@@ -4802,17 +4802,21 @@ static void NORET UNBOUND_VARIABLE_ERROR(SEXP symbol)
 }
 
 static R_INLINE SEXP FORCE_PROMISE(SEXP value, SEXP symbol, SEXP rho,
-				   Rboolean keepmiss)
+				   Rboolean keepmiss, int i)
 {
     if (PRVALUE(value) == R_UnboundValue) {
         /**** R_isMissing is inefficient */
         if (keepmiss && R_isMissing(symbol, rho)) {
             value = R_MissingArg;
         } else {
-            RDT_HOOK(probe_force_promise_entry, symbol, rho);
+            if (i == 4) {
+                RDT_HOOK(probe_force_promise_entry, symbol, rho); // FIXME NOT OK
+            }
 
             value = forcePromise(value);
-            RDT_HOOK(probe_force_promise_exit, symbol, rho, value);
+            if (i == 4) {
+                RDT_HOOK(probe_force_promise_exit, symbol, rho, value);
+            }
         }
     } else {
         value = PRVALUE(value);
@@ -4840,10 +4844,11 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho,
 			    R_binding_cache_t vcache, int sidx)
 {
     SEXP value;
+    SEXP cell;
     if (dd)
 	value = ddfindVar(symbol, rho);
     else if (vcache != NULL) {
-	SEXP cell = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
+	cell = GET_BINDING_CELL_CACHE(symbol, rho, vcache, sidx);
 	value = BINDING_VALUE(cell);
 	if (value == R_UnboundValue)
 	    value = FIND_VAR_NO_CACHE(symbol, rho, cell);
@@ -4857,11 +4862,13 @@ static R_INLINE SEXP getvar(SEXP symbol, SEXP rho,
 	MAYBE_MISSING_ARGUMENT_ERROR(symbol, keepmiss);
     else if (TYPEOF(value) == PROMSXP) {
 	PROTECT(value);
+    PROTECT(cell);
 
         // Tracing: we handled this and we handle this.
-	value = FORCE_PROMISE(value, symbol, rho, keepmiss);
+	value = FORCE_PROMISE(value, symbol, rho, keepmiss, 2); // FIXME NOT OK
+		// So the bug only manifests in this case. My hypothesis is that something is not protected at this point and gets garbage collected if we run findVar and trigger the gc.
 
-	UNPROTECT(1);
+	UNPROTECT(2);
     } else if (NAMED(value) == 0 && value != R_NilValue)
 	SET_NAMED(value, 1);
     return value;
@@ -4893,7 +4900,7 @@ static R_INLINE SEXP getvar_enclos(SEXP symbol, SEXP rho_actual,
 		PROTECT(value);
 
 		// Tracing: we handled this and we handle this.
-		value = FORCE_PROMISE(value, symbol, rho_actual, keepmiss);
+		value = FORCE_PROMISE(value, symbol, rho_actual, keepmiss, 3);
 
 		UNPROTECT(1);
 	} else if (NAMED(value) == 0 && value != R_NilValue)
@@ -4938,7 +4945,7 @@ static R_INLINE SEXP getvar_enclos(SEXP symbol, SEXP rho_actual,
 		    if (pv == R_UnboundValue) {		\
 			SEXP symbol = VECTOR_ELT(constants, sidx);	\
                         /* Tracing: we didn't handle this and we handle this. */ \
-			value = FORCE_PROMISE(value, symbol, rho, keepmiss); \
+			value = FORCE_PROMISE(value, symbol, rho, keepmiss, 4); \
 		    }							\
 		    else {						\
 		        RDT_HOOK(probe_promise_lookup, value, rho, pv)	\
@@ -6361,10 +6368,10 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
 					if (pv == R_UnboundValue) {
 					SEXP symbol = VECTOR_ELT(constants, sidx);
 								/* Tracing: we didn't handle this and we handle this. */
-					value = FORCE_PROMISE(value, symbol, rho, FALSE);
+					value = FORCE_PROMISE(value, symbol, rho, FALSE, 1);
 					}
 					else {
-						RDT_HOOK(probe_promise_lookup, value, rho, pv)
+						RDT_HOOK(probe_promise_lookup, value, rho, pv) // FIXME isn't this already handled inside???
 						value = pv;
 					}
 				}
@@ -6456,11 +6463,11 @@ static SEXP bcEval(SEXP body, SEXP rho, Rboolean useCache)
         // Tracing: we didnt't handle this. Not sure why not. Also not sure what a GETSYMFUN op is.
         int not_forced = PRVALUE(value) == R_UnboundValue;
         if (not_forced) {
-            RDT_HOOK(probe_force_promise_entry, symbol, rho);
+//            RDT_HOOK(probe_force_promise_entry, symbol, rho);
         }
         value = forcePromise(value);
         if (not_forced) {
-            RDT_HOOK(probe_force_promise_exit, symbol, rho, value);
+//            RDT_HOOK(probe_force_promise_exit, symbol, rho, value);
         }
         else {
             RDT_HOOK(probe_promise_lookup, symbol, rho, value);
