@@ -4,6 +4,9 @@
 #CMD='bin/Rscript compose_testable_vignettes.R'
 CMD='bin/R --slave --no-restore --file=compose_testable_vignettes.R --args'
 
+export R_ENABLE_JIT=0
+export KEEP_PKG_SOURCE=yes
+
 PACKAGES=
 
 if [ $# -ge 1 ]
