@@ -66,7 +66,8 @@ sql_stmt_t insert_promise_statement(const prom_basic_info_t & info) {
     return make_insert_promise_statement(
             from_int(info.prom_id),
             from_int(tools::enum_cast(info.prom_type)),
-            wrap_nullable_string(full_sexp_type_to_number_string(info.full_type))
+            wrap_nullable_string(full_sexp_type_to_number_string(info.full_type)),
+            wrap_nullable_string(info.expression)
     );
 }
 

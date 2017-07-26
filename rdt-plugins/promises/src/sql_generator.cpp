@@ -89,13 +89,14 @@ namespace sql_generator {
         return statement.str();
     }
 
-    sql_stmt_t make_insert_promise_statement(sql_val_t id, sql_val_t type, sql_val_t full_type) {
+    sql_stmt_t make_insert_promise_statement(sql_val_t id, sql_val_t type, sql_val_t full_type, sql_val_t expression) {
         stringstream statement;
 
         statement << "insert into promises values ("
                   << id << ","
                   << type << ","
-                  << full_type
+                  << full_type << ","
+                  << expression
                   << ");\n";
 
         return statement.str();
@@ -225,7 +226,8 @@ namespace sql_generator {
                 "    --[ identity ]-------------------------------------------------------------\n"
                 "    id integer primary key, -- equal to promise pointer SEXP\n"
                 "    type integer not null,\n"
-                "    full_type text not null\n"
+                "    full_type text not null,\n"
+                "    expression text\n"
                 ");\n";
     }
 
@@ -251,6 +253,7 @@ namespace sql_generator {
                "    promise_id integer not null,\n"
                "    from_call_id integer not null,\n"
                "    in_call_id integer not null,\n"
+               "    --[ data again ]-----------------------------------------------------------\n"
                "    lifestyle integer not null, -- 0: virgin, 1: local, 2: branch-local/grandchild,\n"
                "                                -- 3: escaped/leaked, 4: immediate-local,\n"
                "                                -- 5: immediate-branch-local/child\n"

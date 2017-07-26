@@ -311,6 +311,8 @@ private:
         set<SEXP> visited;
         get_full_type(PRCODE(prom), rho, info.full_type, visited);
 
+        info.expression = get_expression(PRCODE(prom));
+
         return info;
     }
 

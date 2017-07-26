@@ -196,6 +196,7 @@ struct prom_basic_info_t {
     prom_id_t         prom_id;
     sexp_type         prom_type;
     full_sexp_type    full_type;
+    string            expression;
 };
 
 struct prom_info_t : prom_basic_info_t {
