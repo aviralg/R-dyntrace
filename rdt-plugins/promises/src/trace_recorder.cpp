@@ -101,8 +101,6 @@ string function_call_info_line(TraceLinePrefix prefix, const closure_info_t &inf
     }
     stream << "}\n";
 
-    stream << " recursive=" << recursive_type_to_string(info.recursion);
-
     return stream.str();
 }
 
@@ -151,8 +149,6 @@ string builtin_or_special_call_info_line(TraceLinePrefix prefix, const builtin_i
 
     stream << " compiled=" << (info.fn_compiled ? "true" : "false");
 
-    stream << " recursive=" << recursive_type_to_string(info.recursion);
-
     stream << "\n";
 
     return stream.str();
@@ -183,6 +179,8 @@ string promise_creation_info_line(TraceLinePrefix prefix, const prom_basic_info_
 //        stream << "->" << sexp_type_to_string(info.symbol_underlying_type);
 
     stream << " full_type=" << full_sexp_type_to_string(info.full_type);
+
+    stream << " expression=" << info.expression;
 
     stream << "\n";
 

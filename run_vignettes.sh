@@ -4,10 +4,20 @@
 #CMD='bin/Rscript compose_testable_vignettes.R'
 CMD='bin/R --slave --no-restore --file=compose_testable_vignettes.R --args'
 
+export R_COMPILE_PKGS=1
+export R_DISABLE_BYTECODE=0
 export R_ENABLE_JIT=0
-export KEEP_PKG_SOURCE=yes
+export R_KEEP_PKG_SOURCE=yes
+
+COMPILE_VIGNETTE=false
 
 PACKAGES=
+
+if $COMPILE_VIGNETTE
+then 
+    CMD="$CMD --compile"        
+fi    
+
 
 if [ $# -ge 1 ]
 then
