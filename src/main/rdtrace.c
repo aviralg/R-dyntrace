@@ -28,149 +28,158 @@ void gc_toggle_restore(int previous_value) {
 }
 
 const char *get_ns_name(SEXP op) {
-    SEXP env = CLOENV(op);
-    SEXP spec = R_NamespaceEnvSpec(env);
+    return "UNKNOWN";
+    /* SEXP env = CLOENV(op); */
+    /* SEXP spec = R_NamespaceEnvSpec(env); */
 
-    if (spec != R_NilValue) {
-        if (TYPEOF(spec) == STRSXP && LENGTH(spec) > 0) {
-            return CHAR(STRING_ELT(spec, 0));  
-        } else if (TYPEOF(spec) == CHARSXP) {
-            return CHAR(spec);\
-        } 
-    }
+    /* if (spec != R_NilValue) { */
+    /*     if (TYPEOF(spec) == STRSXP && LENGTH(spec) > 0) { */
+    /*         return CHAR(STRING_ELT(spec, 0));   */
+    /*     } else if (TYPEOF(spec) == CHARSXP) { */
+    /*         return CHAR(spec);\ */
+    /*     }  */
+    /* } */
 
-    return NULL;
+    /* return NULL; */
 }
 
 const char *get_name(SEXP sexp) {
-    const char *s = NULL;
+    return "UNKNOWN";
+    /* const char *s = NULL; */
 
-    switch(TYPEOF(sexp)) {
-        case CHARSXP:
-            s = CHAR(sexp);
-            break;
-        case LANGSXP:
-            s = get_name(CAR(sexp));
-            break;
-        case BUILTINSXP:
-        case SPECIALSXP:
-            s = CHAR(PRIMNAME(sexp));
-            break;
-        case SYMSXP:
-            s = CHAR(PRINTNAME(sexp));
-            break;
-    }
+    /* switch(TYPEOF(sexp)) { */
+    /*     case CHARSXP: */
+    /*         s = CHAR(sexp); */
+    /*         break; */
+    /*     case LANGSXP: */
+    /*         s = get_name(CAR(sexp)); */
+    /*         break; */
+    /*     case BUILTINSXP: */
+    /*     case SPECIALSXP: */
+    /*         s = CHAR(PRIMNAME(sexp)); */
+    /*         break; */
+    /*     case SYMSXP: */
+    /*         s = CHAR(PRINTNAME(sexp)); */
+    /*         break; */
+    /* } */
 
-    return s;
+    /* return s; */
 }
 
 static int get_lineno(SEXP srcref) {
-    if (srcref && srcref != R_NilValue) {
+    return -1;
+    /* if (srcref && srcref != R_NilValue) { */
 
-        if (TYPEOF(srcref) == VECSXP) {
-            srcref = VECTOR_ELT(srcref, 0);
-        }
+    /*     if (TYPEOF(srcref) == VECSXP) { */
+    /*         srcref = VECTOR_ELT(srcref, 0); */
+    /*     } */
 
-        return asInteger(srcref);
-    } 
+    /*     return asInteger(srcref); */
+    /* }  */
     
-    return -1;               
+    /* return -1;                */
 }
 
 static int get_colno(SEXP srcref) {
-    if (srcref && srcref != R_NilValue) {
-
-        if (TYPEOF(srcref) == VECSXP) {
-            srcref = VECTOR_ELT(srcref, 0);
-        }
-
-//        INTEGER(val)[0] = lloc->first_line;
-//        INTEGER(val)[1] = lloc->first_byte;
-//        INTEGER(val)[2] = lloc->last_line;
-//        INTEGER(val)[3] = lloc->last_byte;
-//        INTEGER(val)[4] = lloc->first_column;
-//        INTEGER(val)[5] = lloc->last_column;
-//        INTEGER(val)[6] = lloc->first_parsed;
-//        INTEGER(val)[7] = lloc->last_parsed;
-
-        if(TYPEOF(srcref) == INTSXP) {
-            //lineno = INTEGER(srcref)[0];
-            return INTEGER(srcref)[4];
-        } else {
-            // This should never happen, right?
-            return -1;
-        }
-    }
-
     return -1;
+/*     if (srcref && srcref != R_NilValue) { */
+
+/*         if (TYPEOF(srcref) == VECSXP) { */
+/*             srcref = VECTOR_ELT(srcref, 0); */
+/*         } */
+
+/* //        INTEGER(val)[0] = lloc->first_line; */
+/* //        INTEGER(val)[1] = lloc->first_byte; */
+/* //        INTEGER(val)[2] = lloc->last_line; */
+/* //        INTEGER(val)[3] = lloc->last_byte; */
+/* //        INTEGER(val)[4] = lloc->first_column; */
+/* //        INTEGER(val)[5] = lloc->last_column; */
+/* //        INTEGER(val)[6] = lloc->first_parsed; */
+/* //        INTEGER(val)[7] = lloc->last_parsed; */
+
+/*         if(TYPEOF(srcref) == INTSXP) { */
+/*             //lineno = INTEGER(srcref)[0]; */
+/*             return INTEGER(srcref)[4]; */
+/*         } else { */
+/*             // This should never happen, right? */
+/*             return -1; */
+/*         } */
+/*     } */
+
+/*     return -1; */
 }
 
 static const char *get_filename(SEXP srcref) {
-    if (srcref && srcref != R_NilValue) {
-        if (TYPEOF(srcref) == VECSXP) srcref = VECTOR_ELT(srcref, 0);
-        SEXP srcfile = getAttrib(srcref, R_SrcfileSymbol);
-        if (TYPEOF(srcfile) == ENVSXP) {
-            SEXP filename = findVar(install("filename"), srcfile);
-            if (isString(filename) && length(filename)) {
-                return CHAR(STRING_ELT(filename, 0));
-            }
-        }
-    }
+    return "UNKNOWN";
+    /* if (srcref && srcref != R_NilValue) { */
+    /*     if (TYPEOF(srcref) == VECSXP) srcref = VECTOR_ELT(srcref, 0); */
+    /*     SEXP srcfile = getAttrib(srcref, R_SrcfileSymbol); */
+    /*     if (TYPEOF(srcfile) == ENVSXP) { */
+    /*         SEXP filename = findVar(install("filename"), srcfile); */
+    /*         if (isString(filename) && length(filename)) { */
+    /*             return CHAR(STRING_ELT(filename, 0)); */
+    /*         } */
+    /*     } */
+    /* } */
     
-    return NULL;
+    /* return NULL; */
 }
 
 char *get_callsite(int how_far_in_the_past) {
-    SEXP srcref = R_GetCurrentSrcref(how_far_in_the_past);
-    const char *filename = get_filename(srcref);
-    int lineno = get_lineno(srcref);
-    int colno = get_colno(srcref);
-    char *location = NULL;
+    return strdup("UNKNOWN");
+    /* SEXP srcref = R_GetCurrentSrcref(how_far_in_the_past); */
+    /* const char *filename = get_filename(srcref); */
+    /* int lineno = get_lineno(srcref); */
+    /* int colno = get_colno(srcref); */
+    /* char *location = NULL; */
 
-    if (filename) {
-        if (strlen(filename) > 0) {
-            asprintf(&location, "%s:%d,%d", filename, lineno, colno);
-        } else {
-            asprintf(&location, "<console>:%d,%d", lineno, colno);
-        }
-    }
+    /* if (filename) { */
+    /*     if (strlen(filename) > 0) { */
+    /*         asprintf(&location, "%s:%d,%d", filename, lineno, colno); */
+    /*     } else { */
+    /*         asprintf(&location, "<console>:%d,%d", lineno, colno); */
+    /*     } */
+    /* } */
 
-    return location;
+    /* return location; */
 }
 
 char *get_location(SEXP op) {
-    SEXP srcref = getAttrib(op, R_SrcrefSymbol);
-    const char *filename = get_filename(srcref);
-    int lineno = get_lineno(srcref);
-    int colno = get_colno(srcref);
-    char *location = NULL;
+    return strdup("UNKNOWN");
+    /* SEXP srcref = getAttrib(op, R_SrcrefSymbol); */
+    /* const char *filename = get_filename(srcref); */
+    /* int lineno = get_lineno(srcref); */
+    /* int colno = get_colno(srcref); */
+    /* char *location = NULL; */
 
-    if (filename) {
-        if (strlen(filename) > 0) {
-            asprintf(&location, "%s:%d,%d", filename, lineno, colno);
-        } else {
-            asprintf(&location, "<console>:%d,%d", lineno, colno);
-        }
-    }
+    /* if (filename) { */
+    /*     if (strlen(filename) > 0) { */
+    /*         asprintf(&location, "%s:%d,%d", filename, lineno, colno); */
+    /*     } else { */
+    /*         asprintf(&location, "<console>:%d,%d", lineno, colno); */
+    /*     } */
+    /* } */
 
-    return location;
+    /* return location; */
 }
 
 const char *get_call(SEXP call) {
-    return CHAR(STRING_ELT(deparse1s(call), 0));
+    return "UNKNOWN";
+    /* return CHAR(STRING_ELT(deparse1s(call), 0)); */
 }
 
 char *to_string(SEXP var) {
-    SEXP src = deparse1s(var);
-    char *str = NULL;
+    return "UNKNOWN";
+    /* SEXP src = deparse1s(var); */
+    /* char *str = NULL; */
 
-    if (IS_SCALAR(src, STRSXP)) {
-        str = strdup(CHAR(STRING_ELT(src, 0)));
-    } else {
-        str = strdup("<unsupported>");
-    }
+    /* if (IS_SCALAR(src, STRSXP)) { */
+    /*     str = strdup(CHAR(STRING_ELT(src, 0))); */
+    /* } else { */
+    /*     str = strdup("<unsupported>"); */
+    /* } */
 
-    return str;
+    /* return str; */
 }
 
 int is_byte_compiled(SEXP op) {
@@ -179,7 +188,8 @@ int is_byte_compiled(SEXP op) {
 }
 
 const char *get_expression(SEXP e) {
-    return CHAR(STRING_ELT(deparse1line(e, FALSE), 0));
+    return "UNKNOWN";
+    //    return CHAR(STRING_ELT(deparse1line(e, FALSE), 0));
 }
 
 // returns a monotonic timestamp in microseconds

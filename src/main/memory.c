@@ -2538,6 +2538,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
 	    SET_SHORT_VEC_TRUELENGTH(s, 0);
 	    SET_NAMED(s, 0);
 	    INIT_REFCNT(s);
+      RDT_HOOK(probe_vector_alloc, type, length, (sizeof(SEXPREC_ALIGN) + alloc_size * sizeof(VECREC)), "");
 	    return(s);
 	}
     }
