@@ -152,3 +152,6 @@ stamp-docs
 src/library/rdt/..Rcheck
 cscope.out
 cscope.files
+*.log
+*.Rout
+*.sqlite

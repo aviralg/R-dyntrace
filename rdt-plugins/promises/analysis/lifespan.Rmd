@@ -65,6 +65,7 @@ eventname <- function(event) {
            "0" = "CREATED",
            "1" = "LOOKED UP",
            "2" = "GARBAGE COLLECTED",
+           "3" = "EXPRESSION RETRIEVED",
            "?")
 }
 ```
@@ -139,7 +140,7 @@ data <-
     collect() %>%
     spread(event_type, gc_trigger_counter) %>%
     rowwise() %>%
-    mutate(begin = max(`0`, `1`, na.rm = TRUE) + 1,
+    mutate(begin = max(`0`, `1`, `3`, na.rm = TRUE) + 1,
            end   = min(`2`, max_trigger + 1, na.rm = TRUE) - 1)
 
 # This is quite slow. Looking for a better solution.
@@ -160,7 +161,7 @@ gc_data <-
     mutate(`INDISPENSABLE` = `ALIVE` - `GARBAGE COLLECTED` - `UNUSED`)
 
 scale_x_limits <- c(min_trigger - 1, max_trigger)
-scale_x_breaks <- seq(min_trigger, max_trigger - 1, as.integer((max_trigger - min_trigger) / 10))
+scale_x_breaks <- seq(min_trigger, max_trigger - 1, as.integer((max_trigger - min_trigger) / 5))
 
 graph <-
     gc_data %>%
@@ -199,7 +200,7 @@ graph <-
 graph
 ```
 
-```{r promise_gc_data_summary_statistics, echo = FALSE}
+```{r promise_gc_data_summary_statistics, echo = FALSE, eval = FALSE}
 graph <-
     gc_data %>%
     gather(`PROMISE TYPE`, `COUNT`, -`GC TRIGGER`) %>%

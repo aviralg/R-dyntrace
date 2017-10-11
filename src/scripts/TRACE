@@ -1,0 +1,92 @@
+#
+# ${R_HOME}/bin/TRACE
+
+revision='$Rev: 71736 $'
+version=`set - ${revision}; echo ${2}`
+version="R tracer front end: ${R_VERSION} (r${version})
+
+Copyright (C) 2000--2006 The R Core Team.
+This is free software; see the GNU General Public License version 2
+or later for copying conditions.  There is NO warranty."
+
+opts="--slave --no-restore"
+
+usage="Usage: R CMD TRACE tracer-name [options] input... outdir
+
+Run R non-interactively in tracing mode on input and output tracing
+information in outdir.
+
+Options:
+  -h, --help		     print short help message and exit
+  -v, --version		   print version info and exit
+  -c, --compile      trace compiled code
+  -p=N, --parallel=N trace upto N input files/packages in parallel
+  --trace-tests      trace tests if input is a package
+  --trace-examples   trace examples if input is a package
+  --trace-vignettes  trace vignettes if input is a package
+
+Options starting with '--rdt-' are treated as arguments to the tracer
+and are passed as named arguments to the Rdt function call.
+Other optional arguments are passed on to the R process, which by default
+is started with '$opts'."
+
+code="Rdt(tracer='${1}'"
+shift;
+
+append_tracer_argument () {
+  option="${1#--rdt-}"
+  key=`echo "${option%%=*}" | sed -r 's/-/_/g'`
+  value="${option#*=}"
+  #TODO - numbers should not be quoted as well
+  if [ "$value" = "TRUE" ] || [ "$value" = "FALSE" ];
+  then
+    code="$code,
+    $key=$value"
+  else
+    code="$code,
+    $key='$value'"
+  fi;
+}
+
+trace_file() {
+  ${R_HOME}/bin/R ${opts} ${R_BATCH_OPTIONS} --file="${codedir}/${1}"
+}
+
+trace_package() {
+  
+}
+
+while test -n "${1}"; do
+  case ${1} in
+    -h|--help)
+      echo "${usage}"; exit 0 ;;
+    -v|--version)
+      echo "${version}"; exit 0 ;;
+    --rdt-*) append_tracer_argument ${1}; shift ;;
+    -*) opts="${opts} ${1}"; shift ;;
+    *)  break ;;
+  esac
+done
+
+infile=${1}
+outdir=${2-`basename ${1} .R`}
+code="$code,
+    block={
+`cat $infile`
+})"
+codedir="$outdir/input"
+mkdir -p $codedir
+echo $code > "$codedir/${1}"
+
+## this used to set options(echo=TRUE), but that is the default
+## except for --slave, and why inhibit the latter?
+
+## need to put -f first in case user does --args
+echo $opts
+echo $R_BATCH_OPTIONS
+
+
+### Local Variables: ***
+### mode: sh ***
+### sh-indentation: 2 ***
+### End: ***
