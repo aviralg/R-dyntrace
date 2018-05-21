@@ -25,6 +25,7 @@
 # include <config.h>
 #endif
 
+#include <Rdyntrace.h>
 #include <Defn.h>
 #undef _
 
@@ -237,6 +238,7 @@ SEXP R_quick_method_check(SEXP args, SEXP mlist, SEXP fdef)
 	if(TYPEOF(object) == PROMSXP) {
       DYNTRACE_PROBE_PROMISE_VALUE_LOOKUP(object);
 	    if(PRVALUE(object) == R_UnboundValue) {
+        DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(object);
 		SEXP tmp = eval(PRCODE(object), PRENV(object));
 		PROTECT(tmp); nprotect++;
 		SET_PRVALUE(object,  tmp);
@@ -312,6 +314,7 @@ SEXP R_quick_dispatch(SEXP args, SEXP genericEnv, SEXP fdef)
 	if(TYPEOF(object) == PROMSXP) {
       DYNTRACE_PROBE_PROMISE_VALUE_LOOKUP(object);
 	    if(PRVALUE(object) == R_UnboundValue) {
+        DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(object);
 		SEXP tmp = eval(PRCODE(object), PRENV(object));
 		PROTECT(tmp); nprotect++;
 		SET_PRVALUE(object,  tmp);

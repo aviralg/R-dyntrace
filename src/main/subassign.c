@@ -83,7 +83,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
+#include <Rdyntrace.h>
 #include <Defn.h>
 #include <Internal.h>
 #include <R_ext/RS.h> /* for test of S4 objects */

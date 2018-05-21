@@ -107,6 +107,7 @@
 #include <config.h>
 #endif
 
+#include <Rdyntrace.h>
 #define R_USE_SIGNALS 1
 #include <Defn.h>
 #include <Internal.h>
@@ -280,7 +281,7 @@ void begincontext(RCNTXT * cptr, int flags,
     cptr->jumptarget = NULL;
     cptr->jumpmask = 0;
     R_GlobalContext = cptr;
-    DYNTRACE_PROBE_CONTEXT_BEGIN(cptr);
+    DYNTRACE_PROBE_CONTEXT_ENTRY(cptr);
 }
 
 
@@ -314,7 +315,7 @@ void endcontext(RCNTXT * cptr)
     }
     if (R_ExitContext == cptr)
 	R_ExitContext = NULL;
-    DYNTRACE_PROBE_CONTEXT_END(cptr);
+    DYNTRACE_PROBE_CONTEXT_EXIT(cptr);
     /* continue jumping if this was reached as an intermetiate jump */
     if (jumptarget)
 	/* cptr->returnValue is undefined */

@@ -30,6 +30,7 @@
 #include <Defn.h>
 #include <Internal.h>
 #include <R_ext/RS.h> /* for Calloc, Realloc and for S4 object bit */
+#include <Rdyntrace.h>
 
 static SEXP GetObject(RCNTXT *cptr)
 {

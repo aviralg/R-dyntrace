@@ -102,6 +102,8 @@ extern void *Rm_realloc(void * p, size_t n);
 #define free Rm_free
 #endif
 
+#include <Rdyntrace.h>
+
 /* malloc uses size_t.  We are assuming here that size_t is at least
    as large as unsigned long.  Changed from int at 1.6.0 to (i) allow
    2-4Gb objects on 32-bit system and (ii) objects limited only by
@@ -2169,7 +2171,7 @@ void attribute_hidden InitMemory()
     TAG(R_NilValue) = R_NilValue;
     ATTRIB(R_NilValue) = R_NilValue;
     MARK_NOT_MUTABLE(R_NilValue);
-    DYNTRACE_PROBE_ALLOCATE(R_NilValue);
+    DYNTRACE_PROBE_GC_ALLOCATE(R_NilValue);
     R_BCNodeStackBase =
 	(R_bcstack_t *) malloc(R_BCNODESTACKSIZE * sizeof(R_bcstack_t));
     if (R_BCNodeStackBase == NULL)
@@ -2319,7 +2321,7 @@ SEXP allocSExp(SEXPTYPE t)
     CDR(s) = R_NilValue;
     TAG(s) = R_NilValue;
     ATTRIB(s) = R_NilValue;
-    DYNTRACE_PROBE_ALLOCATE(s);
+    DYNTRACE_PROBE_GC_ALLOCATE(s);
     return s;
 }
 
@@ -2370,7 +2372,7 @@ SEXP cons(SEXP car, SEXP cdr)
     CDR(s) = CHK(cdr); if (cdr) INCREMENT_REFCNT(cdr);
     TAG(s) = R_NilValue;
     ATTRIB(s) = R_NilValue;
-    DYNTRACE_PROBE_ALLOCATE(s);
+    DYNTRACE_PROBE_GC_ALLOCATE(s);
     return s;
 }
 
@@ -2403,7 +2405,7 @@ SEXP CONS_NR(SEXP car, SEXP cdr)
     CDR(s) = CHK(cdr);
     TAG(s) = R_NilValue;
     ATTRIB(s) = R_NilValue;
-    DYNTRACE_PROBE_ALLOCATE(s);
+    DYNTRACE_PROBE_GC_ALLOCATE(s);
     return s;
 }
 
@@ -2457,7 +2459,7 @@ SEXP NewEnvironment(SEXP namelist, SEXP valuelist, SEXP rho)
     HASHTAB(newrho) = R_NilValue;
     ATTRIB(newrho) = R_NilValue;
 
-    DYNTRACE_PROBE_ALLOCATE(newrho);
+    DYNTRACE_PROBE_GC_ALLOCATE(newrho);
 
     v = CHK(valuelist);
     n = CHK(namelist);
@@ -2505,7 +2507,7 @@ SEXP attribute_hidden mkPROMISE(SEXP expr, SEXP rho)
     PRVALUE(s) = R_UnboundValue;
     PRSEEN(s) = 0;
     ATTRIB(s) = R_NilValue;
-    DYNTRACE_PROBE_ALLOCATE(s);
+    DYNTRACE_PROBE_GC_ALLOCATE(s);
     return s;
 }
 
@@ -2603,7 +2605,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
 	    SET_STDVEC_TRUELENGTH(s, 0);
 	    SET_NAMED(s, 0);
 	    INIT_REFCNT(s);
-      DYNTRACE_PROBE_ALLOCATE(s);
+      DYNTRACE_PROBE_GC_ALLOCATE(s);
 	    return(s);
 	}
     }
@@ -2852,7 +2854,7 @@ SEXP allocVector3(SEXPTYPE type, R_xlen_t length, R_allocator_t *allocator)
     else if (type == RAWSXP)
 	VALGRIND_MAKE_MEM_UNDEFINED(RAW(s), actual_size);
 #endif
-    DYNTRACE_PROBE_ALLOCATE(s);
+    DYNTRACE_PROBE_GC_ALLOCATE(s);
     return s;
 }
 
@@ -2877,7 +2879,7 @@ SEXP allocS4Object(void)
    SEXP s;
    GC_PROT(s = allocSExpNonCons(S4SXP));
    SET_S4_OBJECT(s);
-   DYNTRACE_PROBE_ALLOCATE(s);
+   DYNTRACE_PROBE_GC_ALLOCATE(s);
    return s;
 }
 
@@ -3943,7 +3945,7 @@ int (PRSEEN)(SEXP x) { return PRSEEN(CHK(x)); }
 
 void (SET_PRENV)(SEXP x, SEXP v){ FIX_REFCNT(x, PRENV(x), v); CHECK_OLD_TO_NEW(x, v); PRENV(x) = v; }
 void (SET_PRVALUE)(SEXP x, SEXP v) {
-  DYNTRACE_PROBE_PROMISE_VALUE_ASSIGN(x, v);
+  DYNTRACE_PROBE_PROMISE_VALUE_ASSIGN(x);
   FIX_REFCNT(x, PRVALUE(x), v);
   CHECK_OLD_TO_NEW(x, v);
   PRVALUE(x) = v;

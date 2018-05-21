@@ -112,6 +112,8 @@
 #include <trioremap.h>
 #endif
 
+#include <Rdyntrace.h>
+
 #define BUFSIZE 512
 
 #define MIN_Cutoff 20

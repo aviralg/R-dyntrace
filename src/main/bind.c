@@ -25,6 +25,7 @@
 # include <config.h>
 #endif
 
+#include <Rdyntrace.h>
 #include <Defn.h>
 #include <Internal.h>
 #include <R_ext/PrtUtil.h> // for IndexWidth

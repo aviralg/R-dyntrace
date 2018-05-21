@@ -22,7 +22,7 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-
+#include <Rdyntrace.h>
 #define R_USE_SIGNALS 1
 #include <Defn.h>
 #include <Internal.h>
@@ -497,6 +497,7 @@ static SEXP forcePromise(SEXP e)
 {
     DYNTRACE_PROBE_PROMISE_VALUE_LOOKUP(e);
     if (PRVALUE(e) == R_UnboundValue) {
+      DYNTRACE_PROBE_PROMISE_FORCE_ENTRY(e);
 	RPRSTACK prstack;
 	SEXP val;
 	if(PRSEEN(e)) {
@@ -517,7 +518,7 @@ static SEXP forcePromise(SEXP e)
 	prstack.promise = e;
 	prstack.next = R_PendingPromises;
 	R_PendingPromises = &prstack;
-
+  DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(e);
 	val = eval(PRCODE(e), PRENV(e));
 
 	/* Pop the stack, unmark the promise and set its value field.
@@ -529,6 +530,7 @@ static SEXP forcePromise(SEXP e)
 	SET_PRVALUE(e, val);
 	ENSURE_NAMEDMAX(val);
 	SET_PRENV(e, R_NilValue);
+  DYNTRACE_PROBE_PROMISE_FORCE_EXIT(e);
     }
     DYNTRACE_PROBE_PROMISE_VALUE_LOOKUP(e);
     return PRVALUE(e);
@@ -7417,7 +7419,7 @@ SEXP R_bcEncode(SEXP bytes)
     }
 }
 
-static int findOp(void *addr)
+int findOp(void *addr)
 {
     int i;
 

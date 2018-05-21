@@ -95,7 +95,7 @@
 #include <Defn.h>
 #include <Internal.h>
 #include <R_ext/Callbacks.h>
-
+#include <Rdyntrace.h>
 #define FAST_BASE_CACHE_LOOKUP  /* Define to enable fast lookups of symbols */
 				/*    in global cache from base environment */
 
@@ -1123,8 +1123,8 @@ static Rboolean existsVarInFrame(SEXP rho, SEXP symbol)
 	}
 	hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
 	/* Will return 'R_UnboundValue' if not found */
-	SEXP result = R_HashExists(hashcode, symbol, HASHTAB(rho));
-  if(result != R_UnboundValue) {
+	Rboolean result = R_HashExists(hashcode, symbol, HASHTAB(rho));
+  if(result) {
       DYNTRACE_PROBE_ENVIRONMENT_EXISTS_VAR(symbol, rho);
   }
   return result;
