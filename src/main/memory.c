@@ -2457,14 +2457,16 @@ SEXP NewEnvironment(SEXP namelist, SEXP valuelist, SEXP rho)
     HASHTAB(newrho) = R_NilValue;
     ATTRIB(newrho) = R_NilValue;
 
+    DYNTRACE_PROBE_ALLOCATE(newrho);
+
     v = CHK(valuelist);
     n = CHK(namelist);
     while (v != R_NilValue && n != R_NilValue) {
 	SET_TAG(v, TAG(n));
+  DYNTRACE_PROBE_ENVIRONMENT_DEFINE_VAR(TAG(n), CAR(v), newrho);
 	v = CDR(v);
 	n = CDR(n);
     }
-    DYNTRACE_PROBE_ALLOCATE(newrho);
     return (newrho);
 }
 

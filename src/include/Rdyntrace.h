@@ -369,6 +369,15 @@ extern "C" {
     UNPROTECT(3);                                                              \
     DYNTRACE_PROBE_FOOTER(probe_environment_lookup_var);
 
+#define DYNTRACE_PROBE_ENVIRONMENT_EXISTS_VAR(symbol, rho);                    \
+  DYNTRACE_PROBE_HEADER(probe_environment_exists_var);                         \
+  PROTECT(symbol);                                                             \
+  PROTECT(rho);                                                                \
+  dyntrace_active_dyntracer->probe_environment_exists_var(                     \
+      dyntrace_active_dyntrace_context, symbol, rho);                          \
+  UNPROTECT(2);                                                                \
+  DYNTRACE_PROBE_FOOTER(probe_environment_exists_var);
+
 #else
 #define DYNTRACE_PROBE_BEGIN(prom)
 #define DYNTRACE_PROBE_END()
@@ -404,6 +413,7 @@ extern "C" {
 #define DYNTRACE_PROBE_ENVIRONMENT_ASSIGN_VAR(symbol, value, rho)
 #define DYNTRACE_PROBE_ENVIRONMENT_REMOVE_VAR(symbol, rho)
 #define DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, value, rho)
+#define DYNTRACE_PROBE_ENVIRONMENT_EXISTS_VAR(symbol, rho)
 #endif
 
 /* ----------------------------------------------------------------------------
@@ -780,6 +790,14 @@ typedef struct {
     ***************************************************************************/
     void (*probe_environment_lookup_var)(dyntrace_context_t *dyntrace_context,
                                          SEXP symbol, SEXP value, SEXP rho);
+
+    /***************************************************************************
+    Look for DYNTRACE_PROBE_ENVIRONMENT_EXISTS_VAR(...) in
+    - src/main/envir.c
+    ***************************************************************************/
+    void (*probe_environment_exists_var)(dyntrace_context_t *dyntrace_context,
+                                         SEXP symbol, SEXP rho);
+
     void *context;
 } dyntracer_t;
 

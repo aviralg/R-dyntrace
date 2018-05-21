@@ -849,6 +849,7 @@ void attribute_hidden unbindVar(SEXP symbol, SEXP rho)
 	SEXP list;
 	list = RemoveFromList(symbol, FRAME(rho), &found);
 	if (found) {
+    DYNTRACE_PROBE_ENVIRONMENT_REMOVE_VAR(symbol, rho);
 	    if (rho == R_GlobalEnv) R_DirtyImage = 1;
 	    SET_FRAME(rho, list);
 	}
@@ -862,6 +863,7 @@ void attribute_hidden unbindVar(SEXP symbol, SEXP rho)
 	}
 	hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
 	R_HashDelete(hashcode, symbol, HASHTAB(rho));
+  DYNTRACE_PROBE_ENVIRONMENT_REMOVE_VAR(symbol, rho);
 	/* we have no record here if deletion worked */
 	if (rho == R_GlobalEnv) R_DirtyImage = 1;
     }
@@ -917,6 +919,7 @@ static SEXP findVarLocInFrame(SEXP rho, SEXP symbol, Rboolean *canCache)
 	    if(canCache && table->canCache)
 		*canCache = table->canCache(CHAR(PRINTNAME(symbol)), table);
 	}
+  DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, val, rho);
 	return(tmp);
     }
 
@@ -924,6 +927,11 @@ static SEXP findVarLocInFrame(SEXP rho, SEXP symbol, Rboolean *canCache)
 	frame = FRAME(rho);
 	while (frame != R_NilValue && TAG(frame) != symbol)
 	    frame = CDR(frame);
+
+  if(frame != R_NilValue) {
+    DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, CAR(frame), rho);
+  }
+
 	return frame;
     }
     else {
@@ -934,7 +942,11 @@ static SEXP findVarLocInFrame(SEXP rho, SEXP symbol, Rboolean *canCache)
 	}
 	hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
 	/* Will return 'R_NilValue' if not found */
-	return R_HashGetLoc(hashcode, symbol, HASHTAB(rho));
+	SEXP chain = R_HashGetLoc(hashcode, symbol, HASHTAB(rho));
+  if(chain != R_NilValue) {
+    DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, BINDING_VALUE(chain), rho);
+  }
+  return chain;
     }
 }
 
@@ -1002,8 +1014,11 @@ SEXP findVarInFrame3(SEXP rho, SEXP symbol, Rboolean doGet)
     if (TYPEOF(rho) == NILSXP)
 	error(_("use of NULL environment is defunct"));
 
-    if (rho == R_BaseNamespace || rho == R_BaseEnv)
-	return SYMBOL_BINDING_VALUE(symbol);
+    if (rho == R_BaseNamespace || rho == R_BaseEnv) {
+	SEXP value = SYMBOL_BINDING_VALUE(symbol);
+  DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, value, rho);
+  return value;
+    }
 
     if (rho == R_EmptyEnv)
 	return R_UnboundValue;
@@ -1023,12 +1038,17 @@ SEXP findVarInFrame3(SEXP rho, SEXP symbol, Rboolean doGet)
 		    val = R_UnboundValue;
 	    }
 	}
+  if (val != R_UnboundValue)
+    DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, val, rho);
 	return(val);
     } else if (HASHTAB(rho) == R_NilValue) {
 	frame = FRAME(rho);
 	while (frame != R_NilValue) {
-	    if (TAG(frame) == symbol)
-		return BINDING_VALUE(frame);
+    if (TAG(frame) == symbol) {
+      SEXP value =  BINDING_VALUE(frame);
+      DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, value, rho);
+      return value;
+    }
 	    frame = CDR(frame);
 	}
     }
@@ -1040,7 +1060,11 @@ SEXP findVarInFrame3(SEXP rho, SEXP symbol, Rboolean doGet)
 	}
 	hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
 	/* Will return 'R_UnboundValue' if not found */
-	return(R_HashGet(hashcode, symbol, HASHTAB(rho)));
+	SEXP value = R_HashGet(hashcode, symbol, HASHTAB(rho));
+  if (value != R_UnboundValue) {
+    DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, value, rho);
+  }
+	return value;
     }
     return R_UnboundValue;
 }
@@ -1055,8 +1079,13 @@ static Rboolean existsVarInFrame(SEXP rho, SEXP symbol)
     if (TYPEOF(rho) == NILSXP)
 	error(_("use of NULL environment is defunct"));
 
-    if (rho == R_BaseNamespace || rho == R_BaseEnv)
-	return SYMBOL_HAS_BINDING(symbol);
+    if (rho == R_BaseNamespace || rho == R_BaseEnv) {
+	    Rboolean result = SYMBOL_HAS_BINDING(symbol);
+      if(result) {
+          DYNTRACE_PROBE_ENVIRONMENT_EXISTS_VAR(symbol, rho);
+      }
+      return result;
+    }
 
     if (rho == R_EmptyEnv)
 	return FALSE;
@@ -1067,17 +1096,22 @@ static Rboolean existsVarInFrame(SEXP rho, SEXP symbol)
 	Rboolean val = FALSE;
 	table = (R_ObjectTable *) R_ExternalPtrAddr(HASHTAB(rho));
 	if(table->active) {
-	    if(table->exists(CHAR(PRINTNAME(symbol)), NULL, table))
-		val = TRUE;
-	    else
-		val = FALSE;
+    if(table->exists(CHAR(PRINTNAME(symbol)), NULL, table)) {
+      DYNTRACE_PROBE_ENVIRONMENT_EXISTS_VAR(symbol, rho);
+		  val = TRUE;
+    }
+    else {
+		  val = FALSE;
+    }
 	}
 	return(val);
     } else if (HASHTAB(rho) == R_NilValue) {
 	frame = FRAME(rho);
 	while (frame != R_NilValue) {
-	    if (TAG(frame) == symbol)
-		return TRUE;
+    if (TAG(frame) == symbol) {
+      DYNTRACE_PROBE_ENVIRONMENT_EXISTS_VAR(symbol, rho);
+		  return TRUE;
+    }
 	    frame = CDR(frame);
 	}
     }
@@ -1089,7 +1123,11 @@ static Rboolean existsVarInFrame(SEXP rho, SEXP symbol)
 	}
 	hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
 	/* Will return 'R_UnboundValue' if not found */
-	return R_HashExists(hashcode, symbol, HASHTAB(rho));
+	SEXP result = R_HashExists(hashcode, symbol, HASHTAB(rho));
+  if(result != R_UnboundValue) {
+      DYNTRACE_PROBE_ENVIRONMENT_EXISTS_VAR(symbol, rho);
+  }
+  return result;
     }
     return FALSE;
 }
@@ -1182,20 +1220,25 @@ static SEXP findGlobalVar(SEXP symbol)
     SEXP vl, rho;
     Rboolean canCache = TRUE;
     vl = R_GetGlobalCache(symbol);
-    if (vl != R_UnboundValue)
-	return vl;
+    if (vl != R_UnboundValue) {
+      DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, vl, R_GlobalEnv);
+	    return vl;
+    }
     for (rho = R_GlobalEnv; rho != R_EmptyEnv; rho = ENCLOS(rho)) {
 	if (rho != R_BaseEnv) { /* we won't have R_BaseNamespace */
 	    vl = findVarLocInFrame(rho, symbol, &canCache);
 	    if (vl != R_NilValue) {
+        DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, BINDING_VALUE(vl), R_GlobalEnv);
 		if(canCache)
 		    R_AddGlobalCache(symbol, vl);
 		return BINDING_VALUE(vl);
 	    }
 	} else {
 	    vl = SYMBOL_BINDING_VALUE(symbol);
-	    if (vl != R_UnboundValue)
+	    if (vl != R_UnboundValue) {
+        DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, vl, rho);
 		R_AddGlobalCache(symbol, symbol);
+      }
 	    return vl;
 	}
 
@@ -1534,6 +1577,7 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 	    error(_("cannot assign variables to this database"));
 	PROTECT(value);
 	table->assign(CHAR(PRINTNAME(symbol)), value, table);
+  DYNTRACE_PROBE_ENVIRONMENT_DEFINE_VAR(symbol, value, rho);
 	UNPROTECT(1);
 #ifdef USE_GLOBAL_CACHE
 	if (IS_GLOBAL_FRAME(rho)) R_FlushGlobalCache(symbol);
@@ -1543,6 +1587,7 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 
     if (rho == R_BaseNamespace || rho == R_BaseEnv) {
 	gsetVar(symbol, value, rho);
+  DYNTRACE_PROBE_ENVIRONMENT_DEFINE_VAR(symbol, value, rho);
     } else {
 #ifdef USE_GLOBAL_CACHE
 	if (IS_GLOBAL_FRAME(rho)) R_FlushGlobalCache(symbol);
@@ -1558,6 +1603,7 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 		if (TAG(frame) == symbol) {
 		    SET_BINDING_VALUE(frame, value);
 		    SET_MISSING(frame, 0);	/* Over-ride */
+        DYNTRACE_PROBE_ENVIRONMENT_ASSIGN_VAR(symbol, value, rho);
 		    return;
 		}
 		frame = CDR(frame);
@@ -1566,6 +1612,7 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 		error(_("cannot add bindings to a locked environment"));
 	    SET_FRAME(rho, CONS(value, FRAME(rho)));
 	    SET_TAG(FRAME(rho), symbol);
+      DYNTRACE_PROBE_ENVIRONMENT_DEFINE_VAR(symbol, value, rho);
 	}
 	else {
 	    c = PRINTNAME(symbol);
@@ -1576,6 +1623,7 @@ void defineVar(SEXP symbol, SEXP value, SEXP rho)
 	    hashcode = HASHVALUE(c) % HASHSIZE(HASHTAB(rho));
 	    R_HashSet(hashcode, symbol, HASHTAB(rho), value,
 		      FRAME_IS_LOCKED(rho));
+      DYNTRACE_PROBE_ENVIRONMENT_DEFINE_VAR(symbol, value, rho);
 	    if (R_HashSizeCheck(HASHTAB(rho)))
 		SET_HASHTAB(rho, R_HashResize(HASHTAB(rho)));
 	}
@@ -1724,7 +1772,10 @@ void setVar(SEXP symbol, SEXP value, SEXP rho)
     SEXP vl;
     while (rho != R_EmptyEnv) {
 	vl = setVarInFrame(rho, symbol, value);
-	if (vl != R_NilValue) return;
+	if (vl != R_NilValue) {
+    DYNTRACE_PROBE_ENVIRONMENT_ASSIGN_VAR(symbol, value, rho);
+    return;
+  }
 	rho = ENCLOS(rho);
     }
     defineVar(symbol, value, R_GlobalEnv);
@@ -1752,6 +1803,7 @@ void gsetVar(SEXP symbol, SEXP value, SEXP rho)
     R_FlushGlobalCache(symbol);
 #endif
     SET_SYMBOL_BINDING_VALUE(symbol, value);
+    DYNTRACE_PROBE_ENVIRONMENT_ASSIGN_VAR(symbol, value, rho);
 }
 
 /* get environment from a subclass if possible; else return NULL */
@@ -1856,6 +1908,7 @@ static int RemoveVariable(SEXP name, int hashcode, SEXP env)
 	table = (R_ObjectTable *) R_ExternalPtrAddr(HASHTAB(env));
 	if(table->remove == NULL)
 	    error(_("cannot remove variables from this database"));
+  DYNTRACE_PROBE_ENVIRONMENT_REMOVE_VAR(name, env);
 	return(table->remove(CHAR(PRINTNAME(name)), table));
     }
 
@@ -1864,6 +1917,7 @@ static int RemoveVariable(SEXP name, int hashcode, SEXP env)
 	int idx = hashcode % HASHSIZE(hashtab);
 	list = RemoveFromList(name, VECTOR_ELT(hashtab, idx), &found);
 	if (found) {
+      DYNTRACE_PROBE_ENVIRONMENT_REMOVE_VAR(name, env);
 	    if(env == R_GlobalEnv) R_DirtyImage = 1;
 	    if (list == R_NilValue)
 		SET_HASHPRI(hashtab, HASHPRI(hashtab) - 1);
@@ -1877,6 +1931,7 @@ static int RemoveVariable(SEXP name, int hashcode, SEXP env)
     else {
 	list = RemoveFromList(name, FRAME(env), &found);
 	if (found) {
+      DYNTRACE_PROBE_ENVIRONMENT_REMOVE_VAR(name, env);
 	    if(env == R_GlobalEnv) R_DirtyImage = 1;
 	    SET_FRAME(env, list);
 #ifdef USE_GLOBAL_CACHE
@@ -3297,6 +3352,7 @@ void R_MakeActiveBinding(SEXP sym, SEXP fun, SEXP env)
 	    error(_("cannot change active binding if binding is locked"));
 	SET_SYMVALUE(sym, fun);
 	SET_ACTIVE_BINDING_BIT(sym);
+  DYNTRACE_PROBE_ENVIRONMENT_ASSIGN_VAR(sym, fun, env);
 	/* we don't need to worry about the global cache here as
 	   a regular binding cannot be changed */
     }
@@ -3313,6 +3369,7 @@ void R_MakeActiveBinding(SEXP sym, SEXP fun, SEXP env)
 	    error(_("cannot change active binding if binding is locked"));
 	else
 	    SETCAR(binding, fun);
+  DYNTRACE_PROBE_ENVIRONMENT_ASSIGN_VAR(sym, fun, env);
     }
 }
 
