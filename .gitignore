@@ -176,6 +176,7 @@ autom4te.cache
 
 Makeconf
 Makefile
+Makefile.bak
 Makefrag.cc
 Makefrag.cc_lo
 Makefrag.cxx
@@ -339,3 +340,16 @@ src/modules/internet/Makedeps
 src/modules/lapack/Makedeps
 src/nmath/Makedeps
 src/unix/Makedeps
+doc/html/packages.html
+doc/manual/R-FAQ.html
+doc/manual/R-admin.html
+doc/manual/R-data.html
+doc/manual/R-exts.html
+doc/manual/R-intro.html
+doc/manual/R-ints.html
+doc/manual/R-lang.html
+doc/manual/stamp-images-html
+doc/manual/version.texi
+doc/NEWS.rds
+doc/R.1
+stamp-java

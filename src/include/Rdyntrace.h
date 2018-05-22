@@ -1,24 +1,18 @@
 #ifndef __DYNTRACE_H__
 #define __DYNTRACE_H__
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <R.h>
-
-#define HAVE_DECL_SIZE_MAX 1
-#define R_USE_SIGNALS 1
-#include <Defn.h>
-
-#include <Rinternals.h>
-#include <config.h>
-#include <libintl.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <stdint.h>
+
+#include <config.h>
+
+#define HAVE_DECL_SIZE_MAX 1
+#define R_USE_SIGNALS 1
+#define HAVE_INTTYPES_H 1
+#define HAVE_STDINT_H 1
+#define HAVE_LIMITS_H 1
+#include <Defn.h>
 
 #ifdef ENABLE_DYNTRACE
 
@@ -43,15 +37,24 @@ extern "C" {
     }                                                                          \
   }
 
-#define DYNTRACE_PROBE_BEGIN()                                                 \
-  DYNTRACE_PROBE_HEADER(probe_begin);                                          \
-  dyntrace_active_dyntracer->probe_begin(dyntrace_active_dyntracer);           \
-  DYNTRACE_PROBE_FOOTER(probe_begin);
+#define DYNTRACE_PROBE_DYNTRACE_ENTRY(expression, environment)                 \
+  DYNTRACE_PROBE_HEADER(probe_dyntrace_entry);                                 \
+  PROTECT(expression);                                                         \
+  PROTECT(environment);                                                        \
+  dyntrace_active_dyntracer->probe_dyntrace_entry(dyntrace_active_dyntracer,   \
+                                                  expression, environment);    \
+  UNPROTECT(2);                                                                \
+  DYNTRACE_PROBE_FOOTER(probe_dyntrace_entry);
 
-#define DYNTRACE_PROBE_END()                                                   \
-  DYNTRACE_PROBE_HEADER(probe_end);                                            \
-  dyntrace_active_dyntracer->probe_end(dyntrace_active_dyntracer);             \
-  DYNTRACE_PROBE_FOOTER(probe_end);
+#define DYNTRACE_PROBE_DYNTRACE_EXIT(expression, environment, result, error)   \
+  DYNTRACE_PROBE_HEADER(probe_dyntrace_exit);                                  \
+  PROTECT(expression);                                                         \
+  PROTECT(environment);                                                        \
+  PROTECT(result);                                                             \
+  dyntrace_active_dyntracer->probe_dyntrace_exit(                              \
+      dyntrace_active_dyntracer, expression, environment, result, error);      \
+  UNPROTECT(3);                                                                \
+  DYNTRACE_PROBE_FOOTER(probe_dyntrace_exit);
 
 #define DYNTRACE_SHOULD_PROBE(probe_name)                                      \
   (dyntrace_active_dyntracer->probe_name != NULL)
@@ -286,58 +289,58 @@ extern "C" {
   UNPROTECT(3);                                                                \
   DYNTRACE_PROBE_FOOTER(probe_S3_dispatch_exit);
 
-#define DYNTRACE_PROBE_ENVIRONMENT_DEFINE_VAR(symbol, value, rho)              \
-  DYNTRACE_PROBE_HEADER(probe_environment_define_var);                         \
+#define DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_DEFINE(symbol, value, rho)         \
+  DYNTRACE_PROBE_HEADER(probe_environment_variable_define);                    \
   PROTECT(symbol);                                                             \
   PROTECT(value);                                                              \
   PROTECT(rho);                                                                \
-  dyntrace_active_dyntracer->probe_environment_define_var(                     \
+  dyntrace_active_dyntracer->probe_environment_variable_define(                \
       dyntrace_active_dyntracer, symbol, value, rho);                          \
   UNPROTECT(3);                                                                \
-  DYNTRACE_PROBE_FOOTER(probe_environment_define_var);
+  DYNTRACE_PROBE_FOOTER(probe_environment_variable_define);
 
-#define DYNTRACE_PROBE_ENVIRONMENT_ASSIGN_VAR(symbol, value, rho)              \
-  DYNTRACE_PROBE_HEADER(probe_environment_assign_var);                         \
+#define DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_ASSIGN(symbol, value, rho)         \
+  DYNTRACE_PROBE_HEADER(probe_environment_variable_assign);                    \
   PROTECT(symbol);                                                             \
   PROTECT(value);                                                              \
   PROTECT(rho);                                                                \
-  dyntrace_active_dyntracer->probe_environment_assign_var(                     \
+  dyntrace_active_dyntracer->probe_environment_variable_assign(                \
       dyntrace_active_dyntracer, symbol, value, rho);                          \
   UNPROTECT(3);                                                                \
-  DYNTRACE_PROBE_FOOTER(probe_environment_assign_var);
+  DYNTRACE_PROBE_FOOTER(probe_environment_variable_assign);
 
-#define DYNTRACE_PROBE_ENVIRONMENT_REMOVE_VAR(symbol, rho)                     \
-  DYNTRACE_PROBE_HEADER(probe_environment_remove_var);                         \
+#define DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_REMOVE(symbol, rho)                \
+  DYNTRACE_PROBE_HEADER(probe_environment_variable_remove);                    \
   PROTECT(symbol);                                                             \
   PROTECT(rho);                                                                \
-  dyntrace_active_dyntracer->probe_environment_remove_var(                     \
+  dyntrace_active_dyntracer->probe_environment_variable_remove(                \
       dyntrace_active_dyntracer, symbol, rho);                                 \
   UNPROTECT(2);                                                                \
-  DYNTRACE_PROBE_FOOTER(probe_environment_remove_var);
+  DYNTRACE_PROBE_FOOTER(probe_environment_variable_remove);
 
-#define DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, value, rho)              \
-  DYNTRACE_PROBE_HEADER(probe_environment_lookup_var);                         \
+#define DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_LOOKUP(symbol, value, rho)         \
+  DYNTRACE_PROBE_HEADER(probe_environment_variable_lookup);                    \
   PROTECT(symbol);                                                             \
   PROTECT(value);                                                              \
   PROTECT(rho);                                                                \
-  dyntrace_active_dyntracer->probe_environment_lookup_var(                     \
+  dyntrace_active_dyntracer->probe_environment_variable_lookup(                \
       dyntrace_active_dyntracer, symbol, value, rho);                          \
   UNPROTECT(3);                                                                \
-  DYNTRACE_PROBE_FOOTER(probe_environment_lookup_var);
+  DYNTRACE_PROBE_FOOTER(probe_environment_variable_lookup);
 
-#define DYNTRACE_PROBE_ENVIRONMENT_EXISTS_VAR(symbol, rho)                     \
-  DYNTRACE_PROBE_HEADER(probe_environment_exists_var);                         \
+#define DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_EXISTS(symbol, rho)                \
+  DYNTRACE_PROBE_HEADER(probe_environment_variable_exists);                    \
   PROTECT(symbol);                                                             \
   PROTECT(rho);                                                                \
-  dyntrace_active_dyntracer->probe_environment_exists_var(                     \
+  dyntrace_active_dyntracer->probe_environment_variable_exists(                \
       dyntrace_active_dyntracer, symbol, rho);                                 \
   UNPROTECT(2);                                                                \
-  DYNTRACE_PROBE_FOOTER(probe_environment_exists_var);
+  DYNTRACE_PROBE_FOOTER(probe_environment_variable_exists);
 
 #else
 
-#define DYNTRACE_PROBE_BEGIN()
-#define DYNTRACE_PROBE_END()
+#define DYNTRACE_PROBE_DYNTRACE_ENTRY(expression, environment)
+#define DYNTRACE_PROBE_DYNTRACE_EXIT(expression, environment, result, error)
 
 #define DYNTRACE_PROBE_CLOSURE_ENTRY(call, op, rho)
 #define DYNTRACE_PROBE_CLOSURE_EXIT(call, op, rho, retval)
@@ -372,11 +375,11 @@ extern "C" {
 #define DYNTRACE_PROBE_S3_DISPATCH_ENTRY(generic, cls, method, object)
 #define DYNTRACE_PROBE_S3_DISPATCH_EXIT(generic, cls, method, object, retval)
 
-#define DYNTRACE_PROBE_ENVIRONMENT_DEFINE_VAR(symbol, value, rho)
-#define DYNTRACE_PROBE_ENVIRONMENT_ASSIGN_VAR(symbol, value, rho)
-#define DYNTRACE_PROBE_ENVIRONMENT_REMOVE_VAR(symbol, rho)
-#define DYNTRACE_PROBE_ENVIRONMENT_LOOKUP_VAR(symbol, value, rho)
-#define DYNTRACE_PROBE_ENVIRONMENT_EXISTS_VAR(symbol, rho)
+#define DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_DEFINE(symbol, value, rho)
+#define DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_ASSIGN(symbol, value, rho)
+#define DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_REMOVE(symbol, rho)
+#define DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_LOOKUP(symbol, value, rho)
+#define DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_EXISTS(symbol, rho)
 
 #endif
 
@@ -390,12 +393,14 @@ struct dyntracer_t {
   /***************************************************************************
   Fires when the tracer starts. Not an interpreter probe.
   ***************************************************************************/
-  void (*probe_begin)(dyntracer_t *dyntracer);
+  void (*probe_dyntrace_entry)(dyntracer_t *dyntracer, SEXP expression,
+                               SEXP environment);
 
   /***************************************************************************
   Fires when the tracer ends. Not an interpreter probe.
   ***************************************************************************/
-  void (*probe_end)(dyntracer_t *dyntracer);
+  void (*probe_dyntrace_exit)(dyntracer_t *dyntracer, SEXP expression,
+                              SEXP environment, SEXP result, int error);
 
   /***************************************************************************
   Fires on every closure call.
@@ -493,7 +498,7 @@ struct dyntracer_t {
   /***************************************************************************
   Fires when the garbage collector is entered.
   ***************************************************************************/
-  void (*probe_gc_entry)(dyntracer_t *dyntracer, R_size_t size_needed);
+  void (*probe_gc_entry)(dyntracer_t *dyntracer, size_t size_needed);
 
   /***************************************************************************
   Fires when the garbage collector is exited.
@@ -555,32 +560,32 @@ struct dyntracer_t {
   /***************************************************************************
   Fires when a variable is defined in an environment.
   ***************************************************************************/
-  void (*probe_environment_define_var)(dyntracer_t *dyntracer, SEXP symbol,
-                                       SEXP value, SEXP rho);
+  void (*probe_environment_variable_define)(dyntracer_t *dyntracer, SEXP symbol,
+                                            SEXP value, SEXP rho);
 
   /***************************************************************************
   Fires when a variable is assigned in an environment.
   ***************************************************************************/
-  void (*probe_environment_assign_var)(dyntracer_t *dyntracer, SEXP symbol,
-                                       SEXP value, SEXP rho);
+  void (*probe_environment_variable_assign)(dyntracer_t *dyntracer, SEXP symbol,
+                                            SEXP value, SEXP rho);
 
   /***************************************************************************
   Fires when a variable is removed from an environment.
   ***************************************************************************/
-  void (*probe_environment_remove_var)(dyntracer_t *dyntracer, SEXP symbol,
-                                       SEXP rho);
+  void (*probe_environment_variable_remove)(dyntracer_t *dyntracer, SEXP symbol,
+                                            SEXP rho);
 
   /***************************************************************************
   Fires when a variable is looked up in an environment.
   ***************************************************************************/
-  void (*probe_environment_lookup_var)(dyntracer_t *dyntracer, SEXP symbol,
-                                       SEXP value, SEXP rho);
+  void (*probe_environment_variable_lookup)(dyntracer_t *dyntracer, SEXP symbol,
+                                            SEXP value, SEXP rho);
 
   /***************************************************************************
   Fires when a variables is checked for existence in an environment.
   ***************************************************************************/
-  void (*probe_environment_exists_var)(dyntracer_t *dyntracer, SEXP symbol,
-                                       SEXP rho);
+  void (*probe_environment_variable_exists)(dyntracer_t *dyntracer, SEXP symbol,
+                                            SEXP rho);
 
   void *state;
 };
@@ -621,9 +626,13 @@ SEXP dyntracer_destroy_sexp(SEXP dyntracer_sexp,
 // helpers
 // ----------------------------------------------------------------------------
 
-char *serialize_sexp(SEXP s);
+const char *serialize_sexp(SEXP s, int opts);
 int findOp(void *addr);
 int newhashpjw(const char *s);
+
+/* Unwind the call stack in an orderly fashion */
+/* calling the code installed by on.exit along the way */
+/* and finally longjmping to the innermost TOPLEVEL context */
 void NORET jump_to_top_ex(Rboolean, Rboolean, Rboolean, Rboolean, Rboolean);
 
 #define dyntrace_log_error(error, ...)                                         \

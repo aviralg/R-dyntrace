@@ -1,23 +1,14 @@
 #include <Rdyntrace.h>
 #include <Rinternals.h>
 #include <deparse.h>
-#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
-#if !defined(HAVE_CLOCK_GETTIME) && defined(__MACH__)
-#include <mach/clock.h>
-#include <mach/mach.h>
-#endif
-
-dyntrace_context_t *dyntrace_active_dyntrace_context = NULL;
 dyntracer_t *dyntrace_active_dyntracer = NULL;
 int dyntrace_check_reentrancy = 1;
 const char *dyntrace_active_dyntracer_probe_name = NULL;
 int dyntrace_garbage_collector_state = 0;
-clock_t dyntrace_stopwatch;
 int dyntrace_privileged_mode_flag = 0;
 
 dyntracer_t *dyntracer_from_sexp(SEXP dyntracer_sexp) {
@@ -59,41 +50,6 @@ void dyntrace_disable_privileged_mode() { dyntrace_privileged_mode_flag = 0; }
 
 int dyntrace_is_priviliged_mode() { return dyntrace_privileged_mode_flag; }
 
-static const char *get_current_datetime() {
-    time_t current_time = time(NULL);
-    char *time_string = ctime(&current_time);
-    return strtok(time_string, "\n"); // remove new-lines
-}
-
-static void
-assign_environment_variables(environment_variables_t *environment_variables) {
-    environment_variables->r_compile_pkgs = getenv("R_COMPILE_PKGS");
-    environment_variables->r_disable_bytecode = getenv("R_DISABLE_BYTECODE");
-    environment_variables->r_enable_jit = getenv("R_ENABLE_JIT");
-    environment_variables->r_keep_pkg_source = getenv("R_KEEP_PKG_SOURCE");
-}
-
-static dyntracing_context_t *create_dyntracing_context() {
-    // calloc ensures that execution times are all set to 0. If we malloc
-    // instead, we have to explicitly set all execution times to 0;
-    dyntracing_context_t *dyntracing_context =
-        calloc(1, sizeof(dyntracing_context_t));
-    assign_environment_variables(&(dyntracing_context->environment_variables));
-    return dyntracing_context;
-}
-
-static dyntrace_context_t *create_dyntrace_context(dyntracer_t *dyntracer) {
-    dyntrace_context_t *dyntrace_context =
-        calloc(1, sizeof(dyntrace_context_t));
-    dyntrace_context->dyntracer_context = dyntracer->context;
-    dyntrace_context->dyntracing_context = create_dyntracing_context();
-    return dyntrace_context;
-}
-
-static void destroy_dyntrace_context(dyntrace_context_t *dyntrace_context) {
-    free(dyntrace_context->dyntracing_context);
-    free(dyntrace_context);
-}
 
 SEXP do_dyntrace(SEXP call, SEXP op, SEXP args, SEXP rho) {
     int eval_error = FALSE;
@@ -103,40 +59,27 @@ SEXP do_dyntrace(SEXP call, SEXP op, SEXP args, SEXP rho) {
 
     /* extract objects from argument list */
     dyntracer = dyntracer_from_sexp(eval(CAR(args), rho));
-    PROTECT(expression = findVar(CADR(args), rho));
+    PROTECT(expression = PRCODE(findVar(CADR(args), rho)));
     PROTECT(environment = eval(CADDR(args), rho));
 
     if (dyntracer == NULL)
         error("dyntracer is NULL");
-    /* create dyntrace context */
-    dyntrace_active_dyntrace_context = create_dyntrace_context(dyntracer);
 
-    /* begin dyntracing */
     dyntrace_active_dyntracer = dyntracer;
-    dyntrace_stopwatch = clock();
-    dyntrace_active_dyntrace_context->dyntracing_context->begin_datetime =
-        get_current_datetime();
 
-    DYNTRACE_PROBE_BEGIN(expression);
+    DYNTRACE_PROBE_DYNTRACE_ENTRY(expression, environment);
 
-    /* continue dyntracing */
     PROTECT(result = R_tryEval(expression, environment, &eval_error));
+
+    /* we want to return a sensible result for
+       evaluation of the expression */
     if (eval_error) {
-        /* we want to return a sensible result for
-           evaluation of the expression */
-        result = R_NilValue;
-    } else {
-      /* end dyntracing */
-      dyntrace_active_dyntrace_context->dyntracing_context->end_datetime =
-        get_current_datetime();
-      DYNTRACE_PROBE_END();
+      result = R_NilValue;
     }
 
-    dyntrace_active_dyntracer = dyntrace_previous_dyntracer;
+    DYNTRACE_PROBE_DYNTRACE_EXIT(expression, environment, result, eval_error);
 
-    /* destroy dyntrace context */
-    destroy_dyntrace_context(dyntrace_active_dyntrace_context);
-    dyntrace_active_dyntrace_context = NULL;
+    dyntrace_active_dyntracer = dyntrace_previous_dyntracer;
 
     UNPROTECT(3);
     return result;
@@ -159,63 +102,36 @@ void dyntrace_reinstate_garbage_collector() {
     R_GCEnabled = dyntrace_garbage_collector_state;
 }
 
-clock_t dyntrace_reset_stopwatch() {
-    clock_t end_stopwatch = clock();
-    clock_t difference = end_stopwatch - dyntrace_stopwatch;
-    dyntrace_stopwatch = end_stopwatch;
-    return difference;
-}
+#define DYNTRACE_PARSE_DATA_BUFFER_SIZE (1024 * 1024 * 8)
+static char data[DYNTRACE_PARSE_DATA_BUFFER_SIZE];
+static LocalParseData dyntrace_parse_data = {0,
+                                    0,
+                             0,
+                             0,
+                             /*startline = */ TRUE,
+                             0,
+                             NULL,
+                             /*DeparseBuffer=*/{data, 0, DYNTRACE_PARSE_DATA_BUFFER_SIZE},
+                             INT_MAX,
+                             FALSE,
+                             0,
+                             TRUE,
+#ifdef longstring_WARN
+                             FALSE,
+#endif
+                             INT_MAX,
+                             TRUE,
+                             0,
+                             FALSE};
 
-SEXP get_named_list_element(const SEXP list, const char *name) {
-    if (TYPEOF(list) != VECSXP) {
-        error("Not a list");
-    }
-
-    SEXP e = R_NilValue;
-    SEXP names = getAttrib(list, R_NamesSymbol);
-
-    for (int i = 0; i < length(list); i++) {
-        if (strcmp(CHAR(STRING_ELT(names, i)), name) == 0) {
-            e = VECTOR_ELT(list, i);
-            break;
-        }
-    }
-
-    return e;
-}
-
-char *serialize_sexp(SEXP s) {
-
-    LocalParseData parse_data = {0,
-                                 0,
-                                 0,
-                                 0,
-                                 /*startline = */ TRUE,
-                                 0,
-                                 NULL,
-                                 /*DeparseBuffer=*/{NULL, 0, 1024 * 1024},
-                                 INT_MAX,
-                                 FALSE,
-                                 0,
-                                 TRUE,
-                                 FALSE,
-                                 INT_MAX,
-                                 TRUE,
-                                 0,
-                                 FALSE};
-    parse_data.linenumber = 0;
-    parse_data.indent = 0;
-    parse_data.opts = 32;
-    deparse2buff(s, &parse_data);
-    return parse_data.buffer.data;
-}
-
-inline const char *get_string(SEXP sexp) {
-    if (sexp == R_NilValue || TYPEOF(sexp) != STRSXP) {
-        return NULL;
-    }
-
-    return CHAR(STRING_ELT(sexp, 0));
+const char * serialize_sexp(SEXP s, int opts) {
+    dyntrace_parse_data.buffer.data[0] = '\0';
+    dyntrace_parse_data.buffer.bufsize = 0;
+    dyntrace_parse_data.linenumber = 0;
+    dyntrace_parse_data.indent = 0;
+    dyntrace_parse_data.opts = opts;
+    deparse2buff(s, &dyntrace_parse_data);
+    return dyntrace_parse_data.buffer.data;
 }
 
 int newhashpjw(const char *s) { return R_Newhashpjw(s); }
