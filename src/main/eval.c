@@ -1547,8 +1547,10 @@ static int countCycleRefs(SEXP rho, SEXP val)
 	if (val != v) {
 	    switch(TYPEOF(v)) {
 	    case PROMSXP:
-		if (REFCNT(v) == 1 && PRENV(v) == rho)
+      if (REFCNT(v) == 1 && PRENV(v) == rho) {
+        DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(v);
 		    crefs++;
+      }
 		break;
 	    case CLOSXP:
 		if (REFCNT(v) == 1 && CLOENV(v) == rho)
@@ -1924,6 +1926,7 @@ SEXP R_execMethod(SEXP op, SEXP rho)
 	if (missing) {
 	    SET_MISSING(FRAME(newrho), missing);
 	    if (TYPEOF(val) == PROMSXP && PRENV(val) == rho) {
+        DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(val);
 		SEXP deflt;
 		SET_PRENV(val, newrho);
 		/* find the symbol in the method, copy its expression

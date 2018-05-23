@@ -1783,39 +1783,41 @@ static void RunGenCollect(R_size_t size_needed)
 
 #ifdef ENABLE_DYNTRACE
     {
-        SEXP s;
-        int i;
-        for(i=0; i< NUM_SMALL_NODE_CLASSES;i++){
-            s = NEXT_NODE(R_GenHeap[i].New);
-            while (s != R_GenHeap[i].New) {
-                SEXP next = NEXT_NODE(s);
-                if (TYPEOF(s) != FREESXP ) {
-                    DYNTRACE_PROBE_GC_UNMARK(s);
-                    SETOLDTYPE(s, TYPEOF(s));
-                    TYPEOF(s) = FREESXP;
-                }
-                s = next;
-            }
-        }
+#define SETOLDTYPE(s, t) SETLEVELS(s, t)
+    /*     SEXP s; */
+    /*     int i; */
+    /*     for(i=0; i< NUM_SMALL_NODE_CLASSES;i++){ */
+    /*         s = NEXT_NODE(R_GenHeap[i].New); */
+    /*         while (s != R_GenHeap[i].New) { */
+    /*             SEXP next = NEXT_NODE(s); */
+    /*             if (TYPEOF(s) != FREESXP ) { */
+    /*                 DYNTRACE_PROBE_GC_UNMARK(s); */
+    /*                 SETOLDTYPE(s, TYPEOF(s)); */
+    /*                 TYPEOF(s) = FREESXP; */
+    /*             } */
+    /*             s = next; */
+    /*         } */
+    /*     } */
 
-        for (i = CUSTOM_NODE_CLASS; i <= LARGE_NODE_CLASS; i++) {
-            s = NEXT_NODE(R_GenHeap[i].New);
-            while (s != R_GenHeap[i].New) {
-                SEXP next = NEXT_NODE(s);
-                if (TYPEOF(s) != FREESXP) {
-                    /**** could also leave this alone and restore the old
-                          node type in ReleaseLargeFreeVectors before
-                          calculating size */
-                    if (CHAR(s) != NULL) {
-                        R_size_t size = getVecSizeInVEC(s);
-                        SET_STDVEC_LENGTH(s, size);
-                    }
-                    DYNTRACE_PROBE_GC_UNMARK(s);
-                    SETOLDTYPE(s, TYPEOF(s));
-                    SET_TYPEOF(s, FREESXP);
-                }
-            }
-        }
+    /*     for (i = CUSTOM_NODE_CLASS; i <= LARGE_NODE_CLASS; i++) { */
+    /*         s = NEXT_NODE(R_GenHeap[i].New); */
+    /*         while (s != R_GenHeap[i].New) { */
+    /*             SEXP next = NEXT_NODE(s); */
+    /*             if (TYPEOF(s) != FREESXP) { */
+    /*                 /\**** could also leave this alone and restore the old */
+    /*                       node type in ReleaseLargeFreeVectors before */
+    /*                       calculating size *\/ */
+    /*                 if (CHAR(s) != NULL) { */
+    /*                     R_size_t size = getVecSizeInVEC(s); */
+    /*                     SET_STDVEC_LENGTH(s, size); */
+    /*                 } */
+    /*                 DYNTRACE_PROBE_GC_UNMARK(s); */
+    /*                 SETOLDTYPE(s, TYPEOF(s)); */
+    /*                 SET_TYPEOF(s, FREESXP); */
+    /*             } */
+    /*             s = next; */
+    /*         } */
+    /*     } */
     }
 #endif
 
@@ -2465,7 +2467,7 @@ SEXP NewEnvironment(SEXP namelist, SEXP valuelist, SEXP rho)
     n = CHK(namelist);
     while (v != R_NilValue && n != R_NilValue) {
 	SET_TAG(v, TAG(n));
-  DYNTRACE_PROBE_ENVIRONMENT_DEFINE_VAR(TAG(n), CAR(v), newrho);
+  DYNTRACE_PROBE_ENVIRONMENT_VARIABLE_DEFINE(TAG(n), CAR(v), newrho);
 	v = CDR(v);
 	n = CDR(n);
     }
@@ -3935,22 +3937,44 @@ void (SET_HASHTAB)(SEXP x, SEXP v) { FIX_REFCNT(x, HASHTAB(x), v); CHECK_OLD_TO_
 void (SET_ENVFLAGS)(SEXP x, int v) { SET_ENVFLAGS(x, v); }
 
 /* Promise Accessors */
-SEXP (PRCODE)(SEXP x) { return CHK(PRCODE(CHK(x))); }
-SEXP (PRENV)(SEXP x) { return CHK(PRENV(CHK(x))); }
-SEXP (PRVALUE)(SEXP x) {
-  DYNTRACE_PROBE_PROMISE_VALUE_LOOKUP(x);
-  return CHK(PRVALUE(CHK(x)));
+SEXP (PRCODE)(SEXP x) {
+    DYNTRACE_PROBE_PROMISE_EXPRESSION_LOOKUP(x);
+    return CHK(PRCODE(CHK(x)));
 }
+
+SEXP (PRENV)(SEXP x) {
+    DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(x);
+    return CHK(PRENV(CHK(x)));
+}
+
+SEXP (PRVALUE)(SEXP x) {
+    DYNTRACE_PROBE_PROMISE_VALUE_LOOKUP(x);
+    return CHK(PRVALUE(CHK(x)));
+}
+
 int (PRSEEN)(SEXP x) { return PRSEEN(CHK(x)); }
 
-void (SET_PRENV)(SEXP x, SEXP v){ FIX_REFCNT(x, PRENV(x), v); CHECK_OLD_TO_NEW(x, v); PRENV(x) = v; }
-void (SET_PRVALUE)(SEXP x, SEXP v) {
-  DYNTRACE_PROBE_PROMISE_VALUE_ASSIGN(x);
-  FIX_REFCNT(x, PRVALUE(x), v);
-  CHECK_OLD_TO_NEW(x, v);
-  PRVALUE(x) = v;
+void (SET_PRENV)(SEXP x, SEXP v){
+    DYNTRACE_PROBE_PROMISE_ENVIRONMENT_ASSIGN(x, v);
+    FIX_REFCNT(x, PRENV(x), v);
+    CHECK_OLD_TO_NEW(x, v);
+    PRENV(x) = v;
 }
-void (SET_PRCODE)(SEXP x, SEXP v) { FIX_REFCNT(x, PRCODE(x), v); CHECK_OLD_TO_NEW(x, v); PRCODE(x) = v; }
+
+void (SET_PRVALUE)(SEXP x, SEXP v) {
+    DYNTRACE_PROBE_PROMISE_VALUE_ASSIGN(x, v);
+    FIX_REFCNT(x, PRVALUE(x), v);
+    CHECK_OLD_TO_NEW(x, v);
+    PRVALUE(x) = v;
+}
+
+void (SET_PRCODE)(SEXP x, SEXP v) {
+    DYNTRACE_PROBE_PROMISE_EXPRESSION_ASSIGN(x, v);
+    FIX_REFCNT(x, PRCODE(x), v);
+    CHECK_OLD_TO_NEW(x, v);
+    PRCODE(x) = v;
+}
+
 void (SET_PRSEEN)(SEXP x, int v) { SET_PRSEEN(CHK(x), v); }
 
 /* Hashing Accessors */
