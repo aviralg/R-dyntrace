@@ -518,6 +518,7 @@ static SEXP forcePromise(SEXP e)
 	prstack.promise = e;
 	prstack.next = R_PendingPromises;
 	R_PendingPromises = &prstack;
+  DYNTRACE_PROBE_PROMISE_EXPRESSION_LOOKUP(e);
   DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(e);
 	val = eval(PRCODE(e), PRENV(e));
 
@@ -4835,7 +4836,7 @@ SEXP R_BytecodeExpr(SEXP e)
 
 SEXP R_PromiseExpr(SEXP p)
 {
-  DYNTRACE_PROBE_PROMISE_EXPRESSION_LOOKUP(p);
+    DYNTRACE_PROBE_PROMISE_EXPRESSION_LOOKUP(p);
     return bytecodeExpr(PRCODE(p));
 }
 

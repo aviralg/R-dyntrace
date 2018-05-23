@@ -2286,7 +2286,7 @@ R_isMissing(SEXP symbol, SEXP rho)
 		int oldseen = PRSEEN(CAR(vl));
 		SET_PRSEEN(CAR(vl), 1);
 		PROTECT(vl);
-    DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(CAR(val));
+    DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(CAR(vl));
 		val = R_isMissing(PREXPR(CAR(vl)), PRENV(CAR(vl)));
 		UNPROTECT(1); /* vl */
 		/* The oldseen value will usually be 0, but might be 2

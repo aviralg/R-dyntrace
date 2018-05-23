@@ -146,12 +146,13 @@ extern "C" {
   UNPROTECT(1);                                                                \
   DYNTRACE_PROBE_FOOTER(probe_promise_value_lookup);
 
-#define DYNTRACE_PROBE_PROMISE_VALUE_ASSIGN(promise)                           \
+#define DYNTRACE_PROBE_PROMISE_VALUE_ASSIGN(promise, value)                    \
   DYNTRACE_PROBE_HEADER(probe_promise_value_assign);                           \
   PROTECT(promise);                                                            \
+  PROTECT(value);                                                              \
   dyntrace_active_dyntracer->probe_promise_value_assign(                       \
-      dyntrace_active_dyntracer, promise);                                     \
-  UNPROTECT(1);                                                                \
+      dyntrace_active_dyntracer, promise, value);                              \
+  UNPROTECT(2);                                                                \
   DYNTRACE_PROBE_FOOTER(probe_promise_value_assign);
 
 #define DYNTRACE_PROBE_PROMISE_EXPRESSION_LOOKUP(promise)                      \
@@ -162,46 +163,48 @@ extern "C" {
   UNPROTECT(1);                                                                \
   DYNTRACE_PROBE_FOOTER(probe_promise_expression_lookup);
 
-#define DYNTRACE_PROBE_PROMISE_EXPRESSION_ASSIGN(promise)                      \
+#define DYNTRACE_PROBE_PROMISE_EXPRESSION_ASSIGN(promise, expression)          \
   DYNTRACE_PROBE_HEADER(probe_promise_expression_assign);                      \
   PROTECT(promise);                                                            \
+  PROTECT(expression);                                                         \
   dyntrace_active_dyntracer->probe_promise_expression_assign(                  \
-      dyntrace_active_dyntracer, promise);                                     \
-  UNPROTECT(1);                                                                \
+      dyntrace_active_dyntracer, promise, expression);                         \
+  UNPROTECT(2);                                                                \
   DYNTRACE_PROBE_FOOTER(probe_promise_expression_assign);
 
 #define DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(promise)                     \
   DYNTRACE_PROBE_HEADER(probe_promise_environment_lookup);                     \
-  PROTECT(promise);                                                            \
+  PROTECT((promise));                                                          \
   dyntrace_active_dyntracer->probe_promise_environment_lookup(                 \
       dyntrace_active_dyntracer, promise);                                     \
   UNPROTECT(1);                                                                \
   DYNTRACE_PROBE_FOOTER(probe_promise_environment_lookup);
 
-#define DYNTRACE_PROBE_PROMISE_ENVIRONMENT_ASSIGN(promise)                     \
+#define DYNTRACE_PROBE_PROMISE_ENVIRONMENT_ASSIGN(promise, environment)        \
   DYNTRACE_PROBE_HEADER(probe_promise_environment_assign);                     \
   PROTECT(promise);                                                            \
+  PROTECT(environment);                                                        \
   dyntrace_active_dyntracer->probe_promise_environment_assign(                 \
-      dyntrace_active_dyntracer, promise);                                     \
-  UNPROTECT(1);                                                                \
+      dyntrace_active_dyntracer, promise, environment);                        \
+  UNPROTECT(2);                                                                \
   DYNTRACE_PROBE_FOOTER(probe_promise_environment_assign);
 
-#define DYNTRACE_PROBE_EVAL_ENTRY(exp, rho)                                    \
+#define DYNTRACE_PROBE_EVAL_ENTRY(expression, rho)                             \
   DYNTRACE_PROBE_HEADER(probe_eval_entry);                                     \
-  PROTECT(exp);                                                                \
+  PROTECT(expression);                                                         \
   PROTECT(rho);                                                                \
-  dyntrace_active_dyntracer->probe_eval_entry(dyntrace_active_dyntracer, exp,  \
-                                              rho);                            \
+  dyntrace_active_dyntracer->probe_eval_entry(dyntrace_active_dyntracer,       \
+                                              expression, rho);                \
   UNPROTECT(2);                                                                \
   DYNTRACE_PROBE_FOOTER(probe_eval_entry);
 
-#define DYNTRACE_PROBE_EVAL_EXIT(exp, rho, retval)                             \
+#define DYNTRACE_PROBE_EVAL_EXIT(expression, rho, return_value)                \
   DYNTRACE_PROBE_HEADER(probe_eval_exit);                                      \
-  PROTECT(exp);                                                                \
+  PROTECT(expression);                                                         \
   PROTECT(rho);                                                                \
-  PROTECT(retval);                                                             \
-  dyntrace_active_dyntracer->probe_eval_exit(dyntrace_active_dyntracer, exp,   \
-                                             rho, retval);                     \
+  PROTECT(return_value);                                                       \
+  dyntrace_active_dyntracer->probe_eval_exit(dyntrace_active_dyntracer,        \
+                                             expression, rho, return_value);   \
   UNPROTECT(3);                                                                \
   DYNTRACE_PROBE_FOOTER(probe_eval_exit);
 
@@ -352,14 +355,14 @@ extern "C" {
 #define DYNTRACE_PROBE_PROMISE_FORCE_ENTRY(promise)
 #define DYNTRACE_PROBE_PROMISE_FORCE_EXIT(promise)
 #define DYNTRACE_PROBE_PROMISE_VALUE_LOOKUP(promise)
-#define DYNTRACE_PROBE_PROMISE_VALUE_ASSIGN(promise)
+#define DYNTRACE_PROBE_PROMISE_VALUE_ASSIGN(promise, value)
 #define DYNTRACE_PROBE_PROMISE_EXPRESSION_LOOKUP(promise)
-#define DYNTRACE_PROBE_PROMISE_EXPRESSION_ASSIGN(promise)
+#define DYNTRACE_PROBE_PROMISE_EXPRESSION_ASSIGN(promise, expression)
 #define DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(promise)
-#define DYNTRACE_PROBE_PROMISE_ENVIRONMENT_ASSIGN(promise)
+#define DYNTRACE_PROBE_PROMISE_ENVIRONMENT_ASSIGN(promise, environment)
 
-#define DYNTRACE_PROBE_EVAL_ENTRY(exp, rho)
-#define DYNTRACE_PROBE_EVAL_EXIT(exp, rho, retval)
+#define DYNTRACE_PROBE_EVAL_ENTRY(expression, rho)
+#define DYNTRACE_PROBE_EVAL_EXIT(expression, rho, return_value)
 
 #define DYNTRACE_PROBE_GC_ENTRY(size_needed)
 #define DYNTRACE_PROBE_GC_EXIT(gc_count)
@@ -457,8 +460,8 @@ struct dyntracer_t {
   /***************************************************************************
   Fires when the promise value is assigned.
   ***************************************************************************/
-  void (*probe_promise_value_assign)(dyntracer_t *dyntracer,
-                                     const SEXP promise);
+  void (*probe_promise_value_assign)(dyntracer_t *dyntracer, const SEXP promise,
+                                     const SEXP value);
 
   /***************************************************************************
   Fires when the promise expression is looked up.
@@ -470,7 +473,8 @@ struct dyntracer_t {
   Fires when the promise expression is assigned.
   ***************************************************************************/
   void (*probe_promise_expression_assign)(dyntracer_t *dyntracer,
-                                          const SEXP promise);
+                                          const SEXP promise,
+                                          const SEXP expression);
 
   /***************************************************************************
   Fires when the promise environment is looked up.
@@ -482,23 +486,25 @@ struct dyntracer_t {
   Fires when the promise environment is assigned.
   ***************************************************************************/
   void (*probe_promise_environment_assign)(dyntracer_t *dyntracer,
-                                           const SEXP promise);
+                                           const SEXP promise,
+                                           const SEXP environment);
 
   /***************************************************************************
   Fires when the eval function is entered.
   ***************************************************************************/
-  void (*probe_eval_entry)(dyntracer_t *dyntracer, SEXP exp, SEXP rho);
+  void (*probe_eval_entry)(dyntracer_t *dyntracer, const SEXP expression,
+                           const SEXP rho);
 
   /***************************************************************************
   Fires when the eval function is exited.
   ***************************************************************************/
-  void (*probe_eval_exit)(dyntracer_t *dyntracer, SEXP exp, SEXP rho,
-                          SEXP retval);
+  void (*probe_eval_exit)(dyntracer_t *dyntracer, const SEXP expression,
+                          const SEXP rho, SEXP return_value);
 
   /***************************************************************************
   Fires when the garbage collector is entered.
   ***************************************************************************/
-  void (*probe_gc_entry)(dyntracer_t *dyntracer, size_t size_needed);
+  void (*probe_gc_entry)(dyntracer_t *dyntracer, const size_t size_needed);
 
   /***************************************************************************
   Fires when the garbage collector is exited.
@@ -560,32 +566,35 @@ struct dyntracer_t {
   /***************************************************************************
   Fires when a variable is defined in an environment.
   ***************************************************************************/
-  void (*probe_environment_variable_define)(dyntracer_t *dyntracer, SEXP symbol,
-                                            SEXP value, SEXP rho);
+  void (*probe_environment_variable_define)(dyntracer_t *dyntracer,
+                                            const SEXP symbol, const SEXP value,
+                                            const SEXP rho);
 
   /***************************************************************************
   Fires when a variable is assigned in an environment.
   ***************************************************************************/
-  void (*probe_environment_variable_assign)(dyntracer_t *dyntracer, SEXP symbol,
-                                            SEXP value, SEXP rho);
+  void (*probe_environment_variable_assign)(dyntracer_t *dyntracer,
+                                            const SEXP symbol, const SEXP value,
+                                            const SEXP rho);
 
   /***************************************************************************
   Fires when a variable is removed from an environment.
   ***************************************************************************/
-  void (*probe_environment_variable_remove)(dyntracer_t *dyntracer, SEXP symbol,
-                                            SEXP rho);
+  void (*probe_environment_variable_remove)(dyntracer_t *dyntracer,
+                                            const SEXP symbol, const SEXP rho);
 
   /***************************************************************************
   Fires when a variable is looked up in an environment.
   ***************************************************************************/
-  void (*probe_environment_variable_lookup)(dyntracer_t *dyntracer, SEXP symbol,
-                                            SEXP value, SEXP rho);
+  void (*probe_environment_variable_lookup)(dyntracer_t *dyntracer,
+                                            const SEXP symbol, const SEXP value,
+                                            const SEXP rho);
 
   /***************************************************************************
   Fires when a variables is checked for existence in an environment.
   ***************************************************************************/
-  void (*probe_environment_variable_exists)(dyntracer_t *dyntracer, SEXP symbol,
-                                            SEXP rho);
+  void (*probe_environment_variable_exists)(dyntracer_t *dyntracer,
+                                            const SEXP symbol, SEXP rho);
 
   void *state;
 };

@@ -238,6 +238,7 @@ SEXP R_quick_method_check(SEXP args, SEXP mlist, SEXP fdef)
 	if(TYPEOF(object) == PROMSXP) {
       DYNTRACE_PROBE_PROMISE_VALUE_LOOKUP(object);
 	    if(PRVALUE(object) == R_UnboundValue) {
+        DYNTRACE_PROBE_PROMISE_EXPRESSION_LOOKUP(object);
         DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(object);
 		SEXP tmp = eval(PRCODE(object), PRENV(object));
 		PROTECT(tmp); nprotect++;
@@ -314,6 +315,7 @@ SEXP R_quick_dispatch(SEXP args, SEXP genericEnv, SEXP fdef)
 	if(TYPEOF(object) == PROMSXP) {
       DYNTRACE_PROBE_PROMISE_VALUE_LOOKUP(object);
 	    if(PRVALUE(object) == R_UnboundValue) {
+        DYNTRACE_PROBE_PROMISE_EXPRESSION_LOOKUP(object);
         DYNTRACE_PROBE_PROMISE_ENVIRONMENT_LOOKUP(object);
 		SEXP tmp = eval(PRCODE(object), PRENV(object));
 		PROTECT(tmp); nprotect++;
